@@ -1,18 +1,12 @@
-# Copilot CLI Multi-Agent System — User Manual
+# Claude Dev Ecosystem v2 — Team Manual
 
-Location:
+This manual documents how the global multi-agent environment works for Claude Code CLI.
 
-the plugin directory/COPILOT_TEAM_MANUAL.md
-
-This file documents how the global Claude Code multi-agent environment works.
-
-It describes the structure, responsibilities, and workflow of the agent system used by Claude Code.
-
-This is a **global configuration document** and should not be copied into project repositories.
+It is a **global configuration document** and should not be copied into project repositories.
 
 ---
 
-# Purpose of this Document
+## Purpose
 
 This manual exists for two audiences:
 
@@ -21,537 +15,382 @@ This manual exists for two audiences:
 
 It explains:
 
-- how agents collaborate
-- how skills are used
-- how playbooks guide execution
-- how guardrails enforce safe behavior
-- how repository knowledge artifacts persist information across cycles
+- how agents collaborate in parallel
+- how the Task State Engine works
+- how agents communicate between sessions
+- how the knowledge layer (docs/) persists information across cycles
+- how to use the runtime CLI
 
 ---
 
-# 1. System Overview
+## 1. System Overview
 
-Your Copilot environment is organized as a **multi-agent system** where each agent has a specialized role.
+The v2 system is a **parallel multi-agent coordination environment**. The key difference from v1 is that agents do not wait for a central dispatcher — they claim tasks from a shared queue, work autonomously, and communicate via messages.
 
-High-level workflow:
-
-User request  
-↓  
-product-manager  
-↓  
-analysis agents  
-(stack-analyzer + repo-analyzer)  
-↓  
-solution-architect  
-↓  
-software-engineer  
-↓  
-qa-engineer + security-reviewer  
-↓  
+```
+User request
+↓
+product-manager (Team Lead)
+↓ creates tasks
+Task State Engine (.agent-cache/tasks.json)
+↓ agents claim concurrently
+stack-analyzer ──┐
+repo-analyzer    ├── run in parallel
+context-manager ─┘
+↓ (all done)
+solution-architect
+↓
+software-engineer
+↓ (sends handoffs simultaneously)
+qa-engineer ──────┐ run in parallel
+security-reviewer ┘
+↓ (both done)
 tech-writer
+```
 
-Agents use several shared system components:
-
-skills → reusable capabilities  
-playbooks → execution flows  
-guardrails → operational rules  
-policies → system execution policies  
-docs/ → repository knowledge  
-.agent-cache/ → runtime state
-
-Operational rules are defined in:
-
-- GUARDRAILS.md
-- GUARDRAILS_REFERENCE.md
-- BUDGETS.md
+The product-manager creates the task graph and monitors for blockers. It does not orchestrate each handoff — agents handle those directly.
 
 ---
 
-# 2. Folder Architecture
+## 2. Folder Architecture
 
-Global configuration lives in:
+### Global (`~/.claude/`)
 
-the plugin directory/
-
-Main folders:
-
-agents/  
-skills/  
-commands/  
-policies/  
-templates/  
-mcp/  
+```
+agents/          Agent role definitions (markdown)
+skills/          Reusable capability definitions (SKILL.md per skill)
+commands/        Workflow orchestrations (markdown)
+hooks/
+  hooks.json     PreToolUse safety gates
 scripts/
+  pre-edit-check.sh   Edit safety gate
+  validate-local.sh   Validation runner
+  agent-runtime.py    Task State Engine CLI
+templates/
+  local-scaffold/ Bootstrap templates for new projects
+reference/
+  ARCHITECTURE_V2.md  This system's architecture
+  TEAM_MANUAL.md      This document
+  GUARDRAILS.md       Operational rules
+  GUARDRAILS_REFERENCE.md  Detailed guardrail explanations
+  BUDGETS.md          Skill budget tiers
+  USAGE.md            Usage guide
+CLAUDE.md        Global operating rules (loaded by Claude Code)
+```
 
-Important global files:
+### Repo-local
 
-GUARDRAILS.md  
-GUARDRAILS_REFERENCE.md  
-BUDGETS.md  
-README.md  
-USAGE.md  
-COPILOT_TEAM_MANUAL.md  
-
-These files define how the Claude Code multi-agent system behaves globally.
-
----
-
-# 3. Repository Knowledge Files
-
-Each repository using this system maintains knowledge artifacts inside:
-
-docs/
-
-Typical artifacts:
-
-docs/DECISIONS.md  
-docs/STACK_PROFILE.md  
-docs/INVENTORY.md  
-docs/ARCHITECTURE.md  
-docs/QA_REPORT.md  
-docs/SECURITY_REPORT.md  
-docs/ROUTE_MAP.md  
-
-Purpose of these artifacts:
-
-STACK_PROFILE  
-Detected stack and framework information.
-
-INVENTORY  
-Repository file and component inventory.
-
-ARCHITECTURE  
-System structure and module boundaries.
-
-QA_REPORT  
-Validation results produced by QA agents.
-
-SECURITY_REPORT  
-Security findings and risk analysis.
-
-DECISIONS  
-Chronological engineering decisions.
-
-These documents allow agents to avoid rediscovering the repository every cycle.
+```
+CLAUDE.md             Optional repo-specific rule overrides
+.claude/
+  settings.local.json Local Claude Code settings
+docs/                 Knowledge layer (committable, optional)
+  STACK_PROFILE.md
+  INVENTORY.md
+  ARCHITECTURE.md
+  DECISIONS.md
+  TASKS.md
+  REVIEWS.md
+.agent-cache/         Runtime state (gitignored, never commit)
+  tasks.json
+  messages.jsonl
+  timeline.log
+  locks/
+  repo-map.json
+```
 
 ---
 
-# 4. Runtime Cache
+## 3. Task State Engine
 
-Runtime data lives in:
+The Task State Engine is the coordination backbone. It is a file-based store managed by `scripts/agent-runtime.py`.
 
-.agent-cache/
+### States
 
-Examples:
+`pending` → `claimed` → `running` → `review` → `done`
+                                   → `blocked`
+                                   → `failed`
 
-.agent-cache/AGENT_STATE.json  
-.agent-cache/MCP_TOOL_CACHE.json  
-.agent-cache/artifact_freshness.json  
-.agent-cache/skill_budget_state.json  
-.agent-cache/locks/  
-.agent-cache/last-run/  
+### Creating tasks (Team Lead)
 
-These files:
+```bash
+python ~/.claude/scripts/agent-runtime.py task create \
+  --title "Detect stack" \
+  --owner stack-analyzer \
+  --priority high \
+  --inputs "Write output to docs/STACK_PROFILE.md"
+```
 
-- track execution cycles
-- manage skill budgets
-- store artifact freshness metadata
-- manage execution locks
+### Claiming tasks (Execution agents)
 
-Runtime cache should **never be committed to git**.
+```bash
+python ~/.claude/scripts/agent-runtime.py task list --status pending
+python ~/.claude/scripts/agent-runtime.py task claim --id <id> --owner software-engineer
+python ~/.claude/scripts/agent-runtime.py task update --id <id> --status running
+```
 
----
+### Completing tasks
 
-# 5. Guardrails
+```bash
+python ~/.claude/scripts/agent-runtime.py task complete --id <id> \
+  --outputs "Modified: src/foo.ts, src/bar.ts"
+```
 
-Operational rules are defined in:
+### Failing tasks
 
-GUARDRAILS.md
-
-Key rules include:
-
-- one milestone per cycle
-- documentation-first workflow
-- avoid repeating expensive skills
-- never modify unrelated files
-- never expose secrets
-- follow the validation ladder
-
-Validation ladder:
-
-1. targeted-test-runner  
-2. ci-checks  
-3. smoke-journeys  
-
-This escalation pattern keeps validation predictable and cost-aware.
+```bash
+python ~/.claude/scripts/agent-runtime.py task fail --id <id> \
+  --reason "Cannot proceed: implementation plan missing §3"
+```
 
 ---
 
-# 6. Agents
+## 4. Agent Messaging
 
-Your system includes the following agents:
+Agents communicate between sessions via `messages.jsonl`. This is the primary mechanism for handoffs and review decisions.
 
-product-manager  
-Orchestration and milestone planning.
+### Sending a handoff
 
-stack-analyzer  
-Stack detection and framework analysis.
+```bash
+python ~/.claude/scripts/agent-runtime.py message send \
+  --from software-engineer \
+  --to qa-engineer \
+  --task-id <id> \
+  --type handoff \
+  --summary "Implementation complete. Files: src/foo.ts, src/bar.ts" \
+  --files "src/foo.ts,src/bar.ts"
+```
 
-repo-analyzer  
-Repository inventory and structural analysis.
+### Reading the inbox
 
-solution-architect  
-Architecture planning and module boundaries.
+```bash
+python ~/.claude/scripts/agent-runtime.py message inbox --agent qa-engineer --unread
+```
 
-software-engineer  
-Implementation of approved milestones.
+### Message types
 
-qa-engineer  
-Validation and testing.
-
-devops-engineer  
-CI/CD and infrastructure-related tasks.
-
-security-reviewer  
-Security analysis and risk detection.
-
-tech-writer  
-Documentation updates.
-
-pr-comment-responder  
-Handles pull request review comments.
-
-migration-engineer  
-Framework and architecture migrations.
-
-Each agent has a clearly defined role and should avoid expanding scope beyond its responsibility.
+| Type | When to use |
+|------|-------------|
+| `assignment` | Team Lead assigning a task to an agent |
+| `handoff` | Passing completed work to the next agent |
+| `question` | Requesting clarification before proceeding |
+| `review_request` | Requesting a specific review |
+| `review_result` | APPROVE / REQUEST_CHANGES decision from a reviewer |
+| `blocked` | Agent cannot proceed; needs intervention |
+| `done` | Task complete; summary of outputs |
 
 ---
 
-# 7. Skills
+## 5. Knowledge Layer (docs/)
 
-Skills represent reusable capabilities used by agents.
+Repository knowledge persists in `docs/`. These files allow agents to avoid rediscovering the repository every cycle.
 
-Core skills:
+| File | Owner | Purpose |
+|------|-------|---------|
+| `STACK_PROFILE.md` | stack-analyzer | Detected stack, frameworks, confidence levels |
+| `INVENTORY.md` | repo-analyzer | File structure, surfaces, dependencies |
+| `ARCHITECTURE.md` | solution-architect | Implementation plan for current milestone |
+| `DECISIONS.md` | all agents | Chronological engineering decisions |
+| `TASKS.md` | product-manager | Human-readable task summary for the current cycle |
+| `REVIEWS.md` | qa-engineer, security-reviewer | Review history and decisions |
 
-fingerprint  
-stack-detection  
-repo-inventory  
-code-search  
-
-QA skills:
-
-ci-checks  
-smoke-journeys  
-targeted-test-runner  
-
-Security skills:
-
-env-consistency  
-secret-scan-lite  
-
-Migration skills:
-
-react-vite-to-astro  
-
-Skills allow agents to perform specialized analysis without embedding that logic inside the agents themselves.
+These files are optional. The system degrades gracefully when they are absent — agents create them when they run.
 
 ---
 
-# 8. Playbooks
+## 6. Agent Roster
 
-Playbooks define execution flows depending on repository type.
+### Team Leads
 
-Examples:
+| Agent | Model | Role |
+|-------|-------|------|
+| `product-manager` | sonnet | Plans, scopes, creates task graph, monitors for blockers |
+| `pr-comment-responder` | sonnet | Specialized Team Lead for PR review response cycles |
 
-EXISTING_REPO  
-NEW_PROJECT  
-UNKNOWN_STACK  
-MIGRATION_REACT_VITE_TO_ASTRO  
+### Discovery Agents
 
-Playbooks guide how agents collaborate and determine the correct sequence of operations.
+| Agent | Model | Role |
+|-------|-------|------|
+| `context-manager` | haiku | Repo discovery; produces scoped reading plans |
+| `stack-analyzer` | haiku | Stack detection; produces `docs/STACK_PROFILE.md` |
+| `repo-analyzer` | haiku | Repository inventory; produces `docs/INVENTORY.md` |
+| `solution-architect` | sonnet | Architecture planning; produces `docs/ARCHITECTURE.md` |
 
----
+### Execution Agents
 
-# 9. Validation Helper
+| Agent | Model | Role |
+|-------|-------|------|
+| `software-engineer` | sonnet | Feature implementation, bug fixes |
+| `migration-engineer` | sonnet | Framework and architecture migrations |
+| `devops-engineer` | sonnet | Infrastructure, CI, runtime review |
 
-Local validation is handled by:
+### Review Agents
 
-scripts/validate-local.sh
-
-Validation order:
-
-lint  
-typecheck  
-test  
-coverage  
-build  
-
-Only scripts present in package.json are executed.
-
-The validation script:
-
-- never commits changes
-- never pushes to remote
-- never opens pull requests
-- respects git hooks such as husky
+| Agent | Model | Role |
+|-------|-------|------|
+| `qa-engineer` | haiku | Validates quality; APPROVE / REQUEST_CHANGES / BLOCKED |
+| `security-reviewer` | sonnet | Security audit; APPROVE / REQUEST_CHANGES / ESCALATE |
+| `tech-writer` | haiku | Documentation updates |
 
 ---
 
-# 10. Legacy Compatibility
+## 7. Parallel Execution Patterns
 
-Legacy helpers remain available but are not the primary workflow.
+### Pattern A: Independent discovery (start of cycle)
 
-Examples:
+Create all discovery tasks with no dependencies. They run concurrently:
 
-scripts/autopilot.sh  
-scripts/optional/autopilot-ship.sh  
-agent-ask  
-agent-run  
+```bash
+python ~/.claude/scripts/agent-runtime.py task create --title "Detect stack" --owner stack-analyzer --priority high
+python ~/.claude/scripts/agent-runtime.py task create --title "Build inventory" --owner repo-analyzer --priority high
+python ~/.claude/scripts/agent-runtime.py task create --title "Scope context" --owner context-manager --priority high
+```
 
-The primary workflow is now:
+### Pattern B: Fan-out after implementation
 
-Claude Code + agents.
+After software-engineer completes, send handoffs to both reviewers simultaneously. They work in parallel:
 
----
+```bash
+python ~/.claude/scripts/agent-runtime.py message send --from software-engineer --to qa-engineer --type handoff ...
+python ~/.claude/scripts/agent-runtime.py message send --from software-engineer --to security-reviewer --type review_request ...
+```
 
-# 11. First-Time Setup for a Repository
+### Pattern C: Blocked task recovery
 
-Bootstrap a repository with:
+When a task is blocked:
 
-bash the plugin directory/scripts/agent-init
+```bash
+# Agent signals blocked
+python ~/.claude/scripts/agent-runtime.py task update --id <id> --status blocked
+python ~/.claude/scripts/agent-runtime.py message send --from <agent> --to product-manager --type blocked --summary "..."
 
-This creates:
-
-docs/  
-.agent-cache/  
-
-and initializes minimal knowledge artifacts.
-
----
-
-# 12. Recommended Workflow
-
-Typical workflow when working inside a repository:
-
-Step 1 — Understand repository
-
-product-manager  
-stack-analyzer  
-repo-analyzer  
-
-Step 2 — Plan architecture
-
-solution-architect  
-
-Step 3 — Implement changes
-
-software-engineer  
-
-Step 4 — Validate
-
-qa-engineer  
-
-Step 5 — Security review
-
-security-reviewer  
-
-Step 6 — Update documentation
-
-tech-writer  
+# product-manager resolves and updates task back to pending
+python ~/.claude/scripts/agent-runtime.py task update --id <id> --status pending
+python ~/.claude/scripts/agent-runtime.py message send --from product-manager --to <agent> --type assignment --summary "Blocker resolved. Resume task."
+```
 
 ---
 
-# 13. Best Practices
+## 8. Validation
 
-Keep tasks small.
+Local validation is handled by `scripts/validate-local.sh`.
 
-Prefer:
+Validation order (stop at the lowest sufficient level):
 
-- small milestones
-- clear objectives
-- single responsibility
+1. `targeted-test-runner` — focused tests for changed files
+2. `ci-checks` — lint, typecheck, test, build
+3. `smoke-journeys` — E2E smoke checks (expensive; requires explicit justification)
 
-Avoid rewriting entire repositories unless explicitly performing a migration.
-
-Use repository docs as persistent memory.
-
-Agents rely heavily on:
-
-docs/STACK_PROFILE.md  
-docs/INVENTORY.md  
-docs/ARCHITECTURE.md  
-
-Updating these improves future runs.
-
-Avoid repeating expensive analysis when artifacts are fresh.
-
-Use validation early and frequently when implementing changes.
+The script:
+- Detects package manager automatically (yarn/pnpm/bun/npm)
+- Only runs scripts present in `package.json`
+- Captures failure output to `docs/last-run/failure_summary.md`
+- Never commits, pushes, or opens PRs
+- Respects git hooks (husky, lint-staged)
 
 ---
 
-# 14. Example Prompts for Copilot CLI
+## 9. Safety Guardrails
 
-Prompt 1 — Analyze the repository
+All agents must respect:
 
-Act as the product-manager agent.
+1. **Pre-edit gate**: `hooks/hooks.json` runs `scripts/pre-edit-check.sh` before every Write/Edit/MultiEdit. If it blocks, do not bypass.
+2. **Budget tiers**: Low-cost skills run freely. Broader validation max 2/cycle. High-cost max 1/cycle with justification.
+3. **Scope rules**: One milestone per cycle. Never expand scope beyond the active issue.
+4. **Secret safety**: Never expose secrets in outputs. Never commit credentials.
 
-Your goal is to understand the repository and coordinate initial analysis.
-
-Steps:
-
-1. Run stack-analyzer to detect the stack.
-2. Run repo-analyzer to build the repository inventory.
-3. Ensure docs/STACK_PROFILE.md and docs/INVENTORY.md are created or updated.
-4. Summarize the system structure and main components.
+See `reference/GUARDRAILS.md` and `reference/BUDGETS.md` for complete rules.
 
 ---
 
-Prompt 2 — Detect architecture boundaries
+## 10. Example Prompts (v2)
 
-Act as solution-architect.
+### Prompt 1 — Full feature cycle
 
-Using docs/STACK_PROFILE.md and docs/INVENTORY.md:
+```
+Invoke the product-manager agent.
 
-1. Identify major architectural components.
-2. Define module boundaries.
-3. Generate docs/ARCHITECTURE.md describing the system structure.
-4. Highlight potential architectural risks.
+Goal: implement the feature described in issue #42.
 
----
+The product-manager should:
+1. Read existing docs to understand the repository.
+2. Determine the smallest valid milestone.
+3. Create tasks in the Task State Engine for the required agents.
+4. Monitor for blockers and resolve them.
+5. Log the cycle in docs/DECISIONS.md.
+```
 
-Prompt 3 — Detect technical debt
+### Prompt 2 — Parallel repository analysis
 
-Act as solution-architect.
+```
+Invoke the product-manager agent.
 
-Analyze the repository for:
+Goal: analyze this repository for the first time.
 
-- architectural drift
-- outdated patterns
-- duplicated logic
-- missing boundaries
+Create tasks for:
+- stack-analyzer (no dependencies)
+- repo-analyzer (no dependencies)
+- solution-architect (depends on stack-analyzer and repo-analyzer)
 
-Update docs/ARCHITECTURE.md with a "Technical Debt" section.
+Let them run concurrently where possible.
+```
 
----
+### Prompt 3 — Check agent inbox
 
-Prompt 4 — Generate repository documentation
+```
+Invoke the qa-engineer agent.
 
-Act as tech-writer.
+Check your message inbox and process any pending handoff messages.
+For each handoff:
+1. Validate the changed files.
+2. Send a review_result message to the software-engineer.
+3. Update the task status.
+```
 
-Your goal is to improve repository documentation.
+### Prompt 4 — Security review in parallel
 
-Tasks:
+```
+Invoke the security-reviewer agent.
 
-1. Review docs/STACK_PROFILE.md, docs/INVENTORY.md, and docs/ARCHITECTURE.md.
-2. Generate a clear README explaining:
-   - project purpose
-   - architecture
-   - main components
-   - how to run the project
+Check your inbox for review_request messages.
+For each request:
+1. Audit only the files listed in the message.
+2. Classify findings by severity.
+3. Send a review_result message (APPROVE or REQUEST_CHANGES).
+4. Never reproduce secret values in your output.
+```
 
----
+### Prompt 5 — Resolve a blocked task
 
-Prompt 5 — Implement a small feature
+```
+Invoke the product-manager agent.
 
-Act as software-engineer.
+Check the task list for blocked tasks and your inbox for blocked messages.
+For each blocked task:
+1. Understand the reason.
+2. Resolve the blocker or escalate to the user.
+3. Reset the task to pending if the blocker is resolved.
+```
 
-Before writing code:
+### Prompt 6 — PR comment response
 
-1. Review docs/ARCHITECTURE.md.
-2. Confirm which module should contain the feature.
+```
+Invoke the pr-comment-responder agent.
 
-Then:
-
-3. Implement the feature with minimal changes.
-4. Avoid touching unrelated files.
-5. Prepare the system for QA validation.
-
----
-
-Prompt 6 — Run QA validation
-
-Act as qa-engineer.
-
-Your goal is to validate the repository.
-
-Steps:
-
-1. Run lint, typecheck, test, and build if available.
-2. Generate docs/QA_REPORT.md summarizing results.
-3. If failures occur, include failure summaries and affected files.
-
----
-
-Prompt 7 — Security scan
-
-Act as security-reviewer.
-
-Perform a security audit focusing on:
-
-- exposed secrets
-- unsafe environment variables
-- dependency risks
-- insecure API usage
-
-Write results to docs/SECURITY_REPORT.md.
+Address the latest review comments on PR #17.
+Create tasks in the Task State Engine for the required fixes.
+Let agents work in parallel where possible.
+```
 
 ---
 
-Prompt 8 — Fix PR review comments
+## 11. Best Practices
 
-Act as pr-comment-responder.
-
-Your goal is to address pull request comments.
-
-Steps:
-
-1. Read each comment carefully.
-2. Determine whether code or documentation changes are required.
-3. Apply minimal fixes.
-4. Update documentation if necessary.
-
----
-
-Prompt 9 — Plan a migration
-
-Act as migration-engineer.
-
-Plan migration from React + Vite to Astro.
-
-Steps:
-
-1. Analyze current component structure.
-2. Identify reusable components.
-3. Identify parts that must be rewritten.
-4. Produce docs/MIGRATION_PLAN.md describing the migration strategy.
-
----
-
-Prompt 10 — Investigate a bug
-
-Act as software-engineer.
-
-Goal: diagnose a bug without introducing unrelated changes.
-
-Steps:
-
-1. Locate the responsible module.
-2. Trace the code path producing the issue.
-3. Identify root cause.
-4. Propose the minimal fix.
-5. Update tests if necessary.
-
----
-
-# 15. Long-Term Usage Strategy
-
-Recommended pattern when working with this system:
-
-1. Analyze the repository
-2. Plan architecture
-3. Implement the feature
-4. Validate changes
-5. Document results
-
-Following this sequence keeps the system stable, predictable, and scalable even in large repositories.
+- **Keep tasks small**: one focused objective per task, not multi-step epics.
+- **Put context in inputs**: agents cannot share context natively. Everything they need must be in the task `inputs` field.
+- **Prefer parallel**: only use `--depends-on` when a real data dependency exists.
+- **Check inbox before claiming**: an agent may already have a handoff message directing it to specific work.
+- **Update status immediately**: set `running` right after claiming so other agents don't re-claim the task.
+- **Send explicit handoffs**: never assume a downstream agent will poll for your completion — message them.
+- **Update docs/**: keeping `STACK_PROFILE.md`, `INVENTORY.md`, and `ARCHITECTURE.md` fresh improves future cycles.
+- **Avoid re-running expensive skills**: check `skill_budget_state.json` before running high-cost skills.
