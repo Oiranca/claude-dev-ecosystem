@@ -1,0 +1,100 @@
+############################################
+# Claude Code local files
+############################################
+
+# Local Claude settings (machine specific)
+settings.json
+claude.settings.json
+
+# Claude runtime files
+.claude/
+.agent-cache/
+.agent-state/
+
+# Local MCP configs
+.mcp.local.json
+
+############################################
+# Secrets
+############################################
+
+.env
+.env.*
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+
+############################################
+# Logs
+############################################
+
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+############################################
+# Node
+############################################
+
+node_modules/
+dist/
+build/
+coverage/
+
+############################################
+# Python (if any scripts use it)
+############################################
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+
+############################################
+# macOS
+############################################
+
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+############################################
+# Editors
+############################################
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+############################################
+# Claude plugin development
+############################################
+
+# temporary prompt experiments
+prompt-tests/
+scratch/
+tmp/
+
+############################################
+# OS / temp
+############################################
+
+tmp/
+temp/
+.cache/
+
+############################################
+# Local command history
+############################################
+
+command-history-state.json
