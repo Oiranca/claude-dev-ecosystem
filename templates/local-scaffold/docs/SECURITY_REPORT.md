@@ -1,6 +1,6 @@
 # Security Report
 
-> Repository knowledge artifact owned by security-reviewer. Records evidence-backed security findings for the active milestone.
+> Repository knowledge artifact owned by **security-reviewer**. Records evidence-backed security findings for the active milestone.
 
 ## Security Status
 SAFE | WARNING | VULNERABLE

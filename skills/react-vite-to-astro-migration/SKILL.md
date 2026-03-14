@@ -8,193 +8,93 @@ allowed-tools: ["read", "search", "edit"]
 
 Use this skill to migrate a React + Vite application incrementally toward Astro using islands architecture.
 
-This is a migration playbook skill.
-It must never run outside an approved migration workflow.
+**Constraint**: This is a migration playbook skill. It must never run outside an approved migration workflow.
 
 ## Purpose
 
-Convert selected React + Vite components into Astro-compatible structure by classifying them as:
-
-- STATIC
-- ISLAND
-- SHARED
-
-and migrating them in small, reversible batches.
+Convert selected React + Vite components into Astro-compatible structure by classifying them as **STATIC**, **ISLAND**, or **SHARED**, and migrating them in small, reversible batches.
 
 ## Gating Policy
 
-- Cost class: EXPENSIVE
-- Requires explicit playbook justification
-- Only allowed when `MIGRATION_REACT_VITE_TO_ASTRO` playbook is active
-- Only allowed when `docs/STACK_PROFILE.md` confirms React + Vite with HIGH confidence
-- Only allowed during Milestone 4: Incremental Migration
-- Skip if Astro is already detected as the active framework
-- Skip if the build is currently failing
-- Skip if `docs/ROUTE_MAP.md` is missing
-- Skip if `docs/ARCHITECTURE.md` does not contain migration classification
+- **Cost Class**: EXPENSIVE (High-cost).
+- **Authorization**: Requires explicit playbook justification and is only allowed when the `MIGRATION_REACT_VITE_TO_ASTRO` playbook is active.
+- **Pre-conditions**:
+  - `docs/STACK_PROFILE.md` must confirm React + Vite with HIGH confidence.
+  - Must be executed during **Milestone 4: Incremental Migration**.
+  - `docs/ROUTE_MAP.md` and `docs/ARCHITECTURE.md` (with migration classification) must exist.
+- **Skip Conditions**:
+  - Skip if Astro is already detected as the active framework.
+  - Skip if the build is currently failing.
 
 ## Hard Rules
 
-- Maximum 5 components per cycle
-- Prefer homogeneous batches:
-  - STATIC first
-  - then SHARED / layout
-  - then ISLAND
-- Maximum 13 file reads total:
-  - 6 documentation reads
-  - 5 source component reads
-  - 2 config reads
-- Create new files only
-- Never delete original React files
-- Never migrate more than one route surface family in the same batch unless explicitly planned
-- Never guess interactivity classification
-- If uncertainty exists, defer the component
+- **Batch Limit**: Maximum 5 components per cycle.
+- **Batch Order**: Prefer homogeneous batches in this order: 1. STATIC -> 2. SHARED/layout -> 3. ISLAND.
+- **Read Limits**: Maximum 13 file reads total (6 documentation, 5 source components, 2 config).
+- **Safety**: Create new files only; **never delete original React files**.
+- **Scope**: Never migrate more than one route surface family in the same batch unless explicitly planned.
+- **Integrity**: Never guess interactivity classification. If uncertainty exists, defer the component.
 
-## Required documentation reads
+## Required Inputs (via Shared Task List)
 
-Read:
+As context is not shared natively, the **Team Lead** must ensure the **migration-engineer** has access to these artifacts:
+- `.agent-cache/AGENT_STATE.json`.
+- `docs/STACK_PROFILE.md`.
+- `docs/ROUTE_MAP.md`.
+- `docs/ARCHITECTURE.md`.
+- `docs/INVENTORY.md`.
+- `docs/MIGRATION_STATE.md` (if present).
 
-- `.agent-cache/AGENT_STATE.json`
-- `docs/STACK_PROFILE.md`
-- `docs/ROUTE_MAP.md`
-- `docs/ARCHITECTURE.md`
-- `docs/INVENTORY.md`
-- `docs/MIGRATION_STATE.md` if present
-
-## Precondition check
+## Precondition Check
 
 Abort immediately if any of the following fail:
+- Framework is not React.
+- Bundler is not Vite.
+- Confidence is not HIGH.
+- Migration playbook is not active.
+- Architecture classification is missing.
 
-- Framework is not React
-- Bundler is not Vite
-- Confidence is not HIGH
-- Migration playbook is not active
-- Architecture classification is missing
+## Classification Rules
 
-## Classification rules
+### STATIC
+A component is STATIC if it has no hooks, no local state, no effects, and no required runtime interactivity.
+- **Target**: `.astro`.
+- **Transformation**: Remove React imports, move props to `Astro.props`, convert JSX to Astro syntax, and `className` to `class`.
 
-## STATIC
-A component may be classified as STATIC if it has:
-- no hooks
-- no local state
-- no effects
-- no browser-only APIs
-- no required runtime interactivity
+### ISLAND
+A component must remain an ISLAND if it uses hooks, state, effects, or event-driven browser behavior.
+- **Target**: Keep interactive component as `.tsx`/`.jsx` and create an Astro wrapper.
+- **Hydration Policy**: Prefer `client:visible` or `client:idle`. Use `client:load` only if immediate interactivity is required.
 
-Migration target:
-- `.astro`
+### SHARED
+Structural components (e.g., layouts).
+- **Target**: `.astro`.
+- **Transformation**: Convert shell to Astro and replace child rendering with `<slot />`.
 
-Transformation rules:
-- remove React imports
-- move props access to `Astro.props`
-- convert JSX to Astro template syntax
-- convert `className` to `class`
+## Migration Policies
 
-## ISLAND
-A component must remain interactive if it uses:
-- hooks
-- state
-- effects
-- event-driven browser behavior
-- runtime interactivity
+- **Styling**: Preserve existing styling (Tailwind, CSS Modules, etc.). Do not rewrite unless explicitly required.
+- **Routes**: Only update route files if the milestone explicitly includes route migration.
+- **Defer**: Defer components with complex shared state, router coupling, or animation-heavy behavior. Record reasons.
 
-Migration target:
-- keep the interactive component as `.tsx` or `.jsx`
-- create an Astro wrapper file
+## Output & Communication
 
-Hydration directive policy:
-- use `client:load` only when immediate interactivity is required
-- prefer `client:idle` for non-critical interactivity
-- use `client:visible` for deferred or below-the-fold UI
+Upon completion of the batch, the **migration-engineer** must:
 
-## SHARED
-A shared structural component such as layout may be migrated to:
-- `.astro`
+1. **Update Artifacts**:
+   - Write/update migrated `.astro` files and wrappers.
+   - Update `docs/MIGRATION_STATE.md` with the required structure.
+   - Append a short entry to `docs/DECISIONS.md`.
+2. **Communicate**: Post the status of the batch (migrated, deferred, or failed) to the **Shared Task List**.
 
-Transformation rules:
-- convert layout shell to Astro
-- replace child rendering with `<slot />`
-
-## Styling policy
-
-Preserve the existing styling strategy.
-
-Do not rewrite:
-- Tailwind usage
-- CSS modules
-- global stylesheet strategy
-- asset references
-
-unless the architecture plan explicitly requires it.
-
-## Route update policy
-
-Only update route files if the active milestone explicitly includes route migration.
-
-Do not perform broad route restructuring inside the same batch as component migration unless required by the architecture plan.
-
-## Defer policy
-
-Defer a component if it has:
-
-- complex shared state
-- router coupling
-- browser-only API coupling
-- animation-heavy behavior
-- difficult third-party library integration
-- unclear static vs interactive classification
-
-Record every deferred component with a reason.
-
-## Traceability requirements
-
-Every migrated component must record:
-
-- source file
-- target file
-- classification
-- classification reason
-- status: migrated | deferred | failed
-
-## Output
-
-Update:
-- migrated `.astro` files
-- wrapper `.astro` files when needed
-- route files only when explicitly in scope
-
-Write or update:
-- `docs/MIGRATION_STATE.md`
-
-Append a short entry to:
-- `docs/DECISIONS.md`
-
-## Required Migration State Structure
-
-# Migration State
-
-## Current Batch
-Short description of the active batch.
-
-## Migrated Components
-| Source | Target | Classification | Reason | Status |
-
-## Deferred Components
-| Source | Reason |
-
-## Failed Components
-| Source | Reason | Rollback Performed |
-
-## Notes
-Short summary of progress and blockers.
+### Required Migration State Structure (docs/MIGRATION_STATE.md)
+- **Current Batch**: Short description.
+- **Migrated Components**: | Source | Target | Classification | Reason | Status |
+- **Deferred Components**: | Source | Reason |
+- **Failed Components**: | Source | Reason | Rollback Performed |
+- **Notes**: Progress and blockers.
 
 ## Completion Rules
 
-If a migrated component breaks the batch:
-- mark it as failed
-- record rollback in `docs/MIGRATION_STATE.md`
-- do not delete originals
-
-If no safe components are available:
-- write an empty batch result
-- mark the batch as deferred
+- **Failure**: If a component breaks the batch, mark as failed, record rollback, and **do not delete originals**.
+- **No Progress**: If no safe components are available, write an empty result and mark the batch as deferred.

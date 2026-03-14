@@ -1,6 +1,6 @@
 # Architecture Plan
 
-> Repository knowledge artifact owned by solution-architect. Planning only — no implementation details beyond the approved milestone plan.
+> Repository knowledge artifact owned by **solution-architect**. Planning only — no implementation details beyond the approved milestone plan.
 
 ## Issue Summary
 Short description of the problem.

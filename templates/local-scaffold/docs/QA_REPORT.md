@@ -1,6 +1,6 @@
 # QA Report
 
-> Repository knowledge artifact owned by qa-engineer. Records milestone validation results using existing repository tooling.
+> Repository knowledge artifact owned by **qa-engineer**. Records milestone validation results using existing repository tooling.
 
 ## Validation Result
 PASS | PARTIAL | FAIL

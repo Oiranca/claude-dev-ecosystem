@@ -1,6 +1,6 @@
 # Repository Inventory
 
-> Repository knowledge artifact owned by repo-analyzer. Auto-generated during repository analysis. Do not delete.
+> Repository knowledge artifact owned by **repo-analyzer**. Auto-generated during repository analysis. Do not delete.
 
 ## Summary
 Short description of the repository structure.
@@ -14,7 +14,6 @@ Top-level directories and their purpose.
 ## Project Surfaces
 | Surface | Path | Type |
 |---------|------|------|
-|         |      |      |
 
 ## Dependency Signals
 Major frameworks, runtime dependencies, and build dependencies.

@@ -8,161 +8,80 @@ allowed-tools: ["read", "search", "edit"]
 
 Use this skill to perform a lightweight secret hygiene scan before opening a pull request.
 
-This skill is intentionally lightweight.
-It uses pattern matching and repository hygiene checks.
-It does not replace dedicated secret scanning tools.
+This skill is intentionally lightweight and uses pattern matching and repository hygiene checks. It does not replace dedicated secret scanning tools.
 
 ## Purpose
 
 Detect likely accidental exposure of:
-
-- API keys
-- tokens
-- credentials
-- private keys
-- unsafe secret hygiene patterns
-
-before changes are proposed for review.
+- API keys.
+- tokens.
+- credentials.
+- private keys.
+- unsafe secret hygiene patterns.
 
 ## Gating Policy
 
-- Cost class: EXPENSIVE
-- Requires explicit playbook justification naming this skill
-- Skip if fingerprint unchanged
-- Skip if no code or config changes were made
-- Never run on every cycle
+- **Cost Class**: EXPENSIVE (High-cost).
+- **Authorization**: Requires explicit playbook justification naming this skill.
+- **Skip Conditions**:
+  - Skip if repository fingerprint is unchanged.
+  - Skip if no code or config changes were made in the current cycle.
+  - Never run on every cycle.
+- **Budget**: Check `.agent-cache/skill_budget_state.json` (Max 1 run per skill per cycle; requires explicit justification).
 
 ## Hard Rules
 
-- Max 4 document reads:
-  - `.agent-cache/AGENT_STATE.json`
-  - `docs/STACK_PROFILE.md`
-  - `docs/SECURITY_REPORT.md`
-  - `.gitignore`
-- Max 30 files scanned via grep/pattern matching only
-- Do not perform full source reads
-- Do not scan:
-  - `node_modules/`
-  - `.git/`
-  - `dist/`
-  - `build/`
-  - binary files
-  - images
-  - lockfiles
-  - minified files
-- Redact secret-like values in all outputs
-- Never print the actual matched secret value
-- If more than 50 findings exist, report the first 50 and note truncation
+- **Redaction**: Redact secret-like values in all outputs. Never print the actual matched secret value.
+- **Read Limits**: Maximum 4 document reads total:
+  - `.agent-cache/AGENT_STATE.json`.
+  - `docs/STACK_PROFILE.md`.
+  - `docs/SECURITY_REPORT.md`.
+  - `.gitignore`.
+- **Scan Limits**:
+  - Maximum 30 files scanned via grep/pattern matching only.
+  - Do not perform full source reads.
+  - If more than 50 findings exist, report the first 50 and note truncation.
+- **Exclusions**: Do not scan `node_modules/`, `.git/`, `dist/`, `build/`, binary files, images, lockfiles, or minified files.
 
-## Pre-flight repository hygiene checks
+## Pre-flight Repository Hygiene Checks
 
-Check whether the following are ignored in `.gitignore`:
+Check whether the following are ignored in `.gitignore` and classify accordingly:
+- **CRITICAL**: `.env` not ignored.
+- **HIGH**: `.env.local` not ignored.
+- **MEDIUM**: Other sensitive env variants (`.env.*.local`, `.env.production`, `.env.development`, `.env.test`) not ignored.
 
-- `.env`
-- `.env.local`
-- `.env.*.local`
-- `.env.production`
-- `.env.development`
-- `.env.test`
+## Pattern Severity Categories
 
-Classify hygiene issues as:
+- **CRITICAL**: Private key headers (e.g., `BEGIN PRIVATE KEY`) or obvious live credentials with strong indicators.
+- **HIGH**: API key assignments with long literals, AWS access keys (`AKIA...`), JWT secrets, or database URLs with embedded credentials.
+- **MEDIUM**: Generic `secret=`, `password=`, or `token=` assignments with non-trivial literals, bearer tokens, or suspicious auth headers.
+- **LOW**: TODO/FIXME notes mentioning secrets, localhost credentials in examples, or weak hygiene indicators.
 
-- CRITICAL: `.env` not ignored
-- HIGH: `.env.local` not ignored
-- MEDIUM: other sensitive env variants not ignored
+## Output Redaction Policy
 
-## Pattern severity categories
+For every finding, record **only**:
+- File path, line number, pattern category, and severity.
+- **10-character redacted context snippet**.
 
-## CRITICAL
-Examples:
-- private key headers such as `BEGIN PRIVATE KEY`
-- obvious live credentials with strong secret indicators
+**Never record** full secret values, full tokens, private key material, or full credential strings.
 
-## HIGH
-Examples:
-- API key assignments with long literal values
-- AWS access keys (`AKIA...`)
-- JWT secret assignments
-- database URLs containing embedded credentials
+## Output & Communication
 
-## MEDIUM
-Examples:
-- generic `secret=`, `password=`, `token=` assignments with non-trivial literal values
-- bearer tokens
-- suspicious auth headers
+The **security-reviewer** is the owner of this artifact.
+1. **Persistence**: Write results to `docs/SECURITY_REPORT.md`.
+2. **Decision Log**: Append a short completion entry to `docs/DECISIONS.md`.
+3. **Communicate**: Post the scan summary to the **Shared Task List**.
 
-## LOW
-Examples:
-- TODO or FIXME notes mentioning secrets
-- localhost credentials embedded in examples
-- weak hygiene indicators with low certainty
-
-## Output redaction policy
-
-For every finding, record only:
-
-- file path
-- line number
-- pattern category
-- severity
-- 10-character redacted context snippet
-
-Never record:
-- full secret values
-- full tokens
-- private key material
-- full credential strings
-
-## Output
-
-Write results to:
-
-`docs/SECURITY_REPORT.md`
-
-Append a short completion entry to:
-
-`docs/DECISIONS.md`
-
-## Required Output Structure
-
-# Security Report
-
-## Summary
-Short overview of the scan outcome.
-
-## Repository Hygiene Issues
-| Issue | Severity | Evidence |
-
-## Potential Secret Findings
-| File | Line | Pattern Type | Severity | Redacted Context |
-
-## Severity Summary
-- Critical count
-- High count
-- Medium count
-- Low count
-
-## Recommendations
-Short practical next steps.
-
-## Limitations
-State clearly:
-- regex-based scan only
-- false positives possible
-- false negatives possible
-- partial file coverage if scan limit was reached
+### Required Report Structure (docs/SECURITY_REPORT.md)
+- **Summary**: Overview of the scan outcome.
+- **Repository Hygiene Issues**: | Issue | Severity | Evidence |
+- **Potential Secret Findings**: | File | Line | Pattern Type | Severity | Redacted Context |
+- **Severity Summary**: Counts for Critical, High, Medium, and Low.
+- **Recommendations**: Short practical next steps.
+- **Limitations**: Regex-only, false positives/negatives possible, and coverage limits.
 
 ## Completion Rules
 
-If no files are eligible for scanning:
-- still write `docs/SECURITY_REPORT.md`
-- mark the scan as clean with limitations
-
-If no findings are detected:
-- still write the report
-- include hygiene check results
-
-If a pattern-matching error occurs:
-- skip that pattern
-- continue scanning
-- note the limitation
+- **No eligible files**: Still write `docs/SECURITY_REPORT.md`, mark as clean with limitations.
+- **No findings**: Still write the report and include hygiene check results.
+- **Errors**: If a pattern-matching error occurs, skip that pattern, continue, and note the limitation.

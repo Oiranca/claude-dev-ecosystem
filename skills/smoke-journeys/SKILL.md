@@ -17,165 +17,103 @@ Catch regressions that static checks may miss by validating a small set of criti
 
 ## Gating Policy
 
-- Cost class: EXPENSIVE
-- Requires explicit playbook justification naming this skill
-- Skip if no code changes were made
-- Skip if no web routes exist
-- Skip if build did not pass
-- Never run on every cycle
-- Never run before a successful build
-- Check `.agent-cache/skill_budget_state.json` when present before starting another high-cost specialized validation in the same cycle
-- Respect `.agent-cache/locks/qa.lock` when present before starting overlapping smoke validation
+- **Cost Class**: EXPENSIVE (High-cost).
+- **Authorization**: Requires explicit playbook justification naming this skill.
+- **Skip Conditions**:
+  - Skip if no code changes were made.
+  - Skip if no web routes exist.
+  - Skip if build did not pass.
+  - Never run on every cycle.
+  - Never run before a successful build.
+- **Budget & Locks**:
+  - Check `.agent-cache/skill_budget_state.json` before starting (Max 1 run per skill per cycle; requires explicit justification).
+  - Respect `.agent-cache/locks/qa.lock` when present before starting overlapping smoke validation.
 
-## Required inputs
+## Required Inputs (via Shared Task List)
 
-Read only:
-
+As context is not shared natively among Agent Teams, the **Team Lead** must ensure access to:
 - `.agent-cache/AGENT_STATE.json`
 - `docs/STACK_PROFILE.md`
 - `docs/ROUTE_MAP.md`
 - `docs/QA_REPORT.md`
 
-Do not read source files.
+*Do not read source files.*
 
 ## Preconditions
 
 Before running smoke checks:
+- `docs/QA_REPORT.md` must show `build = PASS`.
+- `docs/ROUTE_MAP.md` must exist.
+- `docs/STACK_PROFILE.md` must provide a dev or preview run command.
 
-- `docs/QA_REPORT.md` must show `build = PASS`
-- `docs/ROUTE_MAP.md` must exist
-- `docs/STACK_PROFILE.md` must provide a dev or preview run command
+If any precondition fails, skip the skill, record the reason, and append it to `docs/DECISIONS.md`.
 
-If any precondition fails:
-- skip the skill
-- record the reason
-- append the reason to `docs/DECISIONS.md`
+## Server Startup Policy
 
-## Server startup policy
+- Start the dev or preview server as a background process.
+- Use the run command from `docs/STACK_PROFILE.md`.
+- Wait up to 60 seconds for readiness.
+- **Readiness Strategy**:
+  1. Successful HTTP response from the root route.
+  2. Successful HTTP response from a known route.
+  3. Confirmed listening server process.
 
-- Start the dev or preview server as a background process
-- Use the run command from `docs/STACK_PROFILE.md`
-- Wait up to 60 seconds for readiness
-- Preferred readiness strategy:
-  1. successful HTTP response from the root route
-  2. successful HTTP response from a known route
-  3. confirmed listening server process
+**If the server does not become ready within 60 seconds**:
+- Kill the process.
+- Mark the run as `BLOCKED`.
+- Stop execution.
 
-If the server does not become ready within 60 seconds:
-- kill the process
-- mark the run as `BLOCKED`
-- stop execution
+*The server process must always be terminated, even on failure.*
 
-The server process must always be terminated, even on failure.
-
-## Route selection policy
+## Route Selection Policy
 
 Select at most 10 routes total from `docs/ROUTE_MAP.md`.
+**Priority Order**:
+1. Homepage.
+2. Primary navigation pages.
+3. Important static pages.
+4. Resolvable dynamic routes.
+5. API endpoints (only if useful for runtime verification).
 
-Priority order:
-1. homepage
-2. primary navigation pages
-3. important static pages
-4. resolvable dynamic routes
-5. API endpoints, only if explicitly useful for runtime verification
+- **Maximum total requests**: 20.
+- **Dynamic Routes**: If no concrete testable path is available, skip it and record the limitation.
 
-Maximum total requests: 20
+## Route Validation Rules
 
-If a route is dynamic but no concrete testable path is available:
-- skip it
-- record the limitation
+For each selected route, record URL, classification, HTTP status, response size, and result.
+**A route PASSES if**:
+- HTTP status is 200.
+- Response is not empty.
+- No obvious error indicators appear (e.g., `500`, `Internal Server Error`, stack traces, framework error overlays).
 
-## Route validation rules
+*Do not parse HTML deeply, take screenshots, or run browser automation.*
 
-For each selected route, record:
+## Result Classification
 
-- URL
-- classification
-- HTTP status
-- response size
-- result
+Classify each route as:
+- **PASS**: Healthy response.
+- **FAIL**: Responded but showed error behavior.
+- **BLOCKED**: Server startup failed or test could not run.
+- **SKIP**: Route not testable under current constraints.
 
-A route passes if:
-- HTTP status is 200
-- response is not empty
-- no obvious error indicators appear
+## Output & Communication
 
-Basic error indicators include:
-- `500`
-- `Internal Server Error`
-- stack trace signatures
-- framework error overlays if easily detectable
+The **qa-engineer** is the primary owner of this artifact.
+1. **Persistence**: Write results to `docs/SMOKE_REPORT.md`.
+2. **Decision Log**: Append a short decision entry to `docs/DECISIONS.md`.
+3. **Communicate**: Post the smoke run summary back to the **Shared Task List**.
 
-Do not parse HTML deeply.
-Do not take screenshots.
-Do not run browser automation.
-
-## Result classification
-
-Each checked route must be classified as:
-
-- PASS
-- FAIL
-- BLOCKED
-- SKIP
-
-### PASS
-Route returned a healthy response.
-
-### FAIL
-Route responded but showed error behavior.
-
-### BLOCKED
-Server startup failed or the test could not run.
-
-### SKIP
-Route was not testable under current constraints.
-
-## Output
-
-Write results to:
-
-`docs/SMOKE_REPORT.md`
-
-Append a short decision entry to:
-
-`docs/DECISIONS.md`
-
-## Required Output Structure
-
-# Smoke Report
-
-## Summary
-Short overview of the smoke run.
-
-## Server Startup
-| Command | Result | Notes |
-
-## Selected Routes
-| URL | Classification | Reason Selected |
-
-## Route Results
-| URL | Status | Response Size | Result |
-
-## Blocked or Skipped Routes
-| URL | Reason |
-
-## Overall Result
-PASS | PARTIAL | FAIL | BLOCKED
-
-## Limitations
-List skipped dynamic routes, startup uncertainty, or request truncation.
+### Required Report Structure (docs/SMOKE_REPORT.md)
+- **Summary**: Short overview.
+- **Server Startup**: | Command | Result | Notes |
+- **Selected Routes**: | URL | Classification | Reason Selected |
+- **Route Results**: | URL | Status | Response Size | Result |
+- **Blocked or Skipped Routes**: | URL | Reason |
+- **Overall Result**: PASS | PARTIAL | FAIL | BLOCKED
+- **Limitations**: Document skipped dynamic routes, startup uncertainty, or truncation.
 
 ## Completion Rules
 
-If server startup fails:
-- mark all journeys as `BLOCKED`
-- stop immediately
-- append a critical note to `docs/DECISIONS.md`
-
-If all tested routes fail:
-- mark overall result as `FAIL`
-- append a critical note to `docs/DECISIONS.md`
-
-If at least one critical route passes and no blocking startup issue exists:
-- record partial or full success accordingly
+- **Startup Failure**: Mark all journeys as `BLOCKED`, stop immediately, and append a critical note to `docs/DECISIONS.md`.
+- **Total Failure**: If all tested routes fail, mark as `FAIL` and append a critical note to `docs/DECISIONS.md`.
+- **Partial/Full Success**: Record accordingly if at least one critical route passes and no blocking startup issue exists.

@@ -14,7 +14,6 @@ It only reads configuration and manifest files.
 ## Purpose
 
 Produce a structured stack profile describing:
-
 - language
 - framework
 - runtime
@@ -26,23 +25,25 @@ Produce a structured stack profile describing:
 
 ## Gating Policy
 
-- Cost class: CHEAP
-- Runs after `fingerprint`
-- Skip if `material_change = false`
-- Skip if `docs/STACK_PROFILE.md` exists and fingerprint unchanged
-- Never run without fingerprint completing first
+- **Cost Class**: CHEAP (Low-cost).
+- **Mandatory Sequence**: Runs only after `fingerprint` has completed.
+- **Skip Conditions**:
+  - Skip if `material_change = false`.
+  - Skip if `docs/STACK_PROFILE.md` already exists and the repository fingerprint is unchanged.
+  - Never run without fingerprint evidence.
 
 ## Hard Rules
 
-- Maximum files read: 15
-- Only read configuration or manifest files
-- Never read source directories (`src/`, `lib/`, `components/`)
-- Never infer technologies without file evidence
-- Every detection must cite its source file
-- Stop reading files once 15 files are processed
+- **Maximum files read**: 15.
+- **Read policy**: Only read configuration or manifest files.
+- **No source**: Never read source directories such as `src/`, `lib/`, or `components/`.
+- **Evidence-based**: Never infer technologies without direct file evidence.
+- **Traceability**: Every detection must cite its specific source file.
+- **Termination**: Stop reading files once 15 files have been processed.
 
-## File priority order
+## File Priority Order
 
+The agent must inspect files in this specific order and stop after 15 files:
 1. `package.json`
 2. `pnpm-workspace.yaml`
 3. `tsconfig.json`
@@ -62,76 +63,49 @@ Produce a structured stack profile describing:
 17. `Cargo.toml`
 18. `go.mod`
 
-Stop after 15 files.
+## Detection Targets
 
-## Detection targets
+Extract signals and provide evidence for:
+- **Language**: (e.g., TypeScript, JavaScript, Python, Rust, Go).
+- **Framework**: (e.g., React, Astro, Vue, Angular, Svelte).
+- **Runtime**: (e.g., Node.js, Bun, Deno, Python runtime).
+- **Bundler**: (e.g., Vite, Webpack, Esbuild, Turbo).
+- **Styling tools**: (e.g., Tailwind, Sass, PostCSS).
+- **Package manager**: (e.g., npm, yarn, pnpm, bun, pip, cargo, go modules).
+- **Testing framework**: (e.g., Jest, Vitest, Playwright, Cypress).
+- **Deployment platform**: (e.g., Vercel, Netlify, AWS, Docker).
+- **Build tooling**: (e.g., ESLint, Prettier, Husky).
 
-Extract signals for:
+## Run Command Extraction
 
-- language
-- framework
-- runtime
-- bundler
-- styling tools
-- package manager
-- testing framework
-- deployment platform
-- build tooling
+Detect run commands specifically for `dev`, `build`, `test`, and `lint`.
+- **Primary Source**: `package.json` scripts.
+- **Fallback Sources**: `Makefile` or CI workflow commands.
 
-## Package manager detection
+## Confidence & Mode Rules
 
-Detect:
+### Confidence Levels
+- **HIGH** → 3 or more independent evidence signals.
+- **MEDIUM** → 1–2 evidence signals.
+- **LOW** → Weak or conflicting signals.
 
-- npm
-- yarn
-- pnpm
-- bun
-- pip
-- cargo
-- go modules
+**If conflicting signals appear**: Mark detection as `CONFLICTING`, set confidence to `LOW`, and list both sources.
 
-Evidence must come from manifest files.
+### Detection Mode
+Record as one of: `config-evidence`, `partial-detection`, or `conflicting`.
 
-## Run command extraction
+## Output & Communication
 
-Detect run commands for:
+The **stack-analyzer** is the owner of this artifact. Upon completion:
+1. **Persistence**: Write the structured results to `docs/STACK_PROFILE.md`.
+2. **Decision Log**: Append a short completion entry to `docs/DECISIONS.md`.
+3. **Communicate**: Post the stack summary to the **Shared Task List** so the Team Lead can update project context.
 
-- dev
-- build
-- test
-- lint
-
-Primary source:
-
-- `package.json` scripts
-
-Fallback sources:
-
-- Makefile
-- CI workflow commands
-
-## Confidence rules
-
-Confidence levels:
-
-- HIGH → 3+ independent evidence signals
-- MEDIUM → 1–2 evidence signals
-- LOW → weak or conflicting signals
-
-If conflicting framework signals appear:
-
-- mark detection as `CONFLICTING`
-- set confidence = LOW
-- list both sources
-
-## Detection mode
-
-Record detection mode as one of:
-
-- `config-evidence`
-- `partial-detection`
-- `conflicting`
-
-## Output
-
-Write results to:
+### Required Output Structure (docs/STACK_PROFILE.md)
+- **Summary**: High-level overview of the detected stack.
+- **Confidence**: HIGH | MEDIUM | LOW.
+- **Detection Mode**: config-evidence | partial-detection | conflicting.
+- **Core Stack Table**: | Category | Technology | Evidence File |
+- **Run Commands**: | Purpose | Command | Source |
+- **Tooling and Deployment**: | Category | Signal Found | Evidence File |
+- **Conflicts or Ambiguities**: List any conflicting signals found.

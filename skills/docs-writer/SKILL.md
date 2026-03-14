@@ -14,89 +14,82 @@ It only summarizes and synchronizes information from existing agent-generated do
 ## Purpose
 
 Keep the following documentation aligned with the latest validated repository state:
-
-- README.md
-- CHANGELOG.md
-- selected human-facing documentation sections
+- `README.md`.
+- `CHANGELOG.md`.
+- Selected human-facing documentation sections.
 
 ## Gating Policy
 
-- Cost class: CHEAP
-- Run only after a cycle that produced or updated docs
-- Skip if no docs changed in the current cycle
-- Skip if the repository fingerprint is unchanged
-- Never run as a standalone cycle without upstream documentation changes
+- **Cost Class**: CHEAP.
+- **Trigger**: Run only after a cycle that produced or updated docs.
+- **Skip Conditions**:
+  - Skip if no docs changed in the current cycle.
+  - Skip if the repository fingerprint is unchanged.
+  - Never run as a standalone cycle without upstream documentation changes.
+
+## Required Inputs (via Shared Task List)
+
+As context is isolated, the agent must be provided with the paths to the source of truth artifacts:
+- `AGENT_STATE.json`.
+- `docs/STACK_PROFILE.md`.
+- `docs/INVENTORY.md`.
+- `docs/ARCHITECTURE.md`.
+- `docs/DECISIONS.md`.
+- `README.md`.
+- `CHANGELOG.md`.
 
 ## Hard Rules
 
-- Never read source code
-- Never read config files
-- Maximum 7 file reads total:
-  - AGENT_STATE.json
-  - docs/STACK_PROFILE.md
-  - docs/INVENTORY.md
-  - docs/ARCHITECTURE.md
-  - docs/DECISIONS.md
-  - README.md
-  - CHANGELOG.md
-- Never rewrite the entire README
-- Never delete existing README content
-- Only update agent-managed sections when markers are present
-- If markers are absent, append new agent-managed sections to the end
-- Never invent undocumented features
-- Never summarize from memory
-- Use existing docs only
+- **Never read source code**.
+- **Never read config files**.
+- **Maximum 7 file reads total** (the files listed in Required Inputs).
+- **Never rewrite the entire README**.
+- **Never delete existing README content**.
+- **Never invent undocumented features**.
+- **Never summarize from memory**: Use existing docs only.
+- **Ownership**: This skill is primary for the **tech-writer** agent.
 
-## Managed README sections
+## Managed README Sections
 
-Preferred markers:
+Only update agent-managed sections when the following markers are present:
+- `` / ``.
+- `` / ``.
+- `` / ``.
+- `` / ``.
 
-- `<!-- agent:project-overview-start -->` / `<!-- agent:project-overview-end -->`
-- `<!-- agent:development-workflow-start -->` / `<!-- agent:development-workflow-end -->`
-- `<!-- agent:architecture-summary-start -->` / `<!-- agent:architecture-summary-end -->`
-- `<!-- agent:recent-changes-start -->` / `<!-- agent:recent-changes-end -->`
+**If markers are absent**: Append a new `## Agent-managed project summary` section at the end of `README.md`.
 
-If markers do not exist:
-- append a new `## Agent-managed project summary` section at the end of README.md
+## CHANGELOG Policy
 
-## CHANGELOG policy
+- Update `CHANGELOG.md` only with a minimal new entry for the current cycle.
+- Do not rewrite historical entries.
+- If `CHANGELOG.md` is missing, create a minimal one.
+- **Structure**:
+  ## [YYYY-MM-DD]
+  ### Added
+  ### Changed
+  ### Fixed
+  ### Security
+  *(Only include sections relevant to the current cycle)*.
 
-- Update `CHANGELOG.md` only with a minimal new entry for the current cycle
-- Do not rewrite historical entries
-- If `CHANGELOG.md` is missing, create a minimal one
-- Use this structure:
+## Missing File Behavior
 
-## [YYYY-MM-DD]
+- **If README.md is missing**: Create a minimal `README.md` with agent-managed sections only.
+- **If any docs file is missing**:
+  - Skip the corresponding summary section.
+  - Add a warning to the output.
+  - Append a short warning note to `docs/DECISIONS.md`.
 
-### Added
-### Changed
-### Fixed
-### Security
+## Output & Communication
 
-Only include sections relevant to the current cycle.
-
-## Missing file behavior
-
-If README.md is missing:
-- create a minimal README with agent-managed sections only
-
-If any docs file is missing:
-- skip the corresponding summary section
-- add a warning to the output
-- append a short warning note to `docs/DECISIONS.md`
-
-## Output
-
-Update:
-- `README.md`
-- `CHANGELOG.md` when relevant
-
-Append a short entry to:
-- `docs/DECISIONS.md`
+Upon execution, the agent must:
+1. **Edit**: Update `README.md` and `CHANGELOG.md` (when relevant).
+2. **Persistence**: Append a short entry to `docs/DECISIONS.md` recording the documentation sync.
+3. **Communicate**: Post a confirmation to the **Shared Task List** once human-facing docs are synchronized.
 
 ## Completion Rules
 
 The skill is successful if:
-- documentation was updated non-destructively
-- no undocumented claims were introduced
-- README existing content was preserved
+- Documentation was updated non-destructively.
+- No undocumented claims were introduced.
+- `README.md` existing content was preserved.

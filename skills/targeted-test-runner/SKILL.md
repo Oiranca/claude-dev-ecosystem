@@ -6,156 +6,88 @@ allowed-tools: ["read", "execute", "edit"]
 
 # Targeted Test Runner
 
-Use this skill to execute a focused subset of tests related to files changed in the current cycle.
+Use this skill to execute a **focused subset of tests** related to files changed in the current cycle.
 
-This skill helps validate changes quickly without running the entire test suite.
+This skill helps validate changes quickly without running the entire test suite. **Prefer this skill** before running full project test suites.
 
 ## Purpose
 
-Validate behavior changes by running tests that are likely affected by the modified files.
-
-Prefer this skill before running full project test suites.
+* **Validate behavior changes** by running tests that are likely affected by the modified files.
+* Provide **rapid feedback** during the implementation phase.
 
 ## Gating Policy
 
-- Cost class: MEDIUM
-- Skip if no code files changed
-- Skip if no test framework detected in `docs/STACK_PROFILE.md`
-- Skip if fingerprint unchanged
-- Never run before code implementation
+* **Cost Class**: MEDIUM.
+* **Skip Conditions**:
+    * Skip if **no code files** changed.
+    * Skip if **no test framework** is detected in `docs/STACK_PROFILE.md`.
+    * Skip if the **repository fingerprint** is unchanged.
+    * **Never run** before code implementation.
+* **Budget**: Check `.agent-cache/skill_budget_state.json` (Broader validation limits apply).
 
-## Required Inputs
+## Required Inputs (via Shared Task List)
 
-Read only:
+As context is isolated, the **Team Lead** must ensure access to these artifacts:
+* `.agent-cache/AGENT_STATE.json` (For fingerprint and cycle changes).
+* `docs/STACK_PROFILE.md` (For test commands and framework detection).
+* `docs/INVENTORY.md` (For structural mapping).
 
-- `.agent-cache/AGENT_STATE.json`
-- `docs/STACK_PROFILE.md`
-- `docs/INVENTORY.md`
-
-Do not read full source files unless necessary.
+**Note**: Do not read full source files unless necessary for discovery.
 
 ## Test Framework Detection
 
-Supported test frameworks include:
-
-- Jest
-- Vitest
-- Mocha
-- Pytest
-- Go test
-- Cargo test
-
-Use commands from `docs/STACK_PROFILE.md`.
+Supported test frameworks include: **Jest, Vitest, Mocha, Pytest, Go test, and Cargo test**. Always use the specific commands defined in `docs/STACK_PROFILE.md`.
 
 ## Changed File Detection
 
-Determine changed files using:
-
-- fingerprint state
-- current cycle changes
-
-Focus on:
-
-- application code
-- API handlers
-- route handlers
-- libraries
-- utilities
-
-Ignore:
-
-- documentation files
-- configuration-only changes unless tests depend on them
+Determine changed files using the **fingerprint state** and **current cycle changes**.
+* **Focus on**: Application code, API handlers, route handlers, libraries, and utilities.
+* **Ignore**: Documentation files and configuration-only changes (unless tests explicitly depend on them).
 
 ## Test Discovery Strategy
 
 Attempt to find tests related to changed files using:
+1.  **Same directory** test files.
+2.  Adjacent `*.test.*` or `*.spec.*` files.
+3.  **Test folders** referencing the specific module.
+4.  Framework-specific test discovery patterns.
 
-1. Same directory test files
-2. Adjacent `*.test.*` or `*.spec.*` files
-3. Test folders referencing the module
-4. Framework-specific test discovery patterns
-
-Limit:
-
-- Maximum 10 test files executed
-- Maximum runtime per command: 5 minutes
+### Discovery Limits
+* Maximum **10 test files** executed.
+* Maximum runtime per command: **5 minutes**.
 
 ## Execution Rules
 
-- Run tests only for discovered files
-- Continue running tests even if earlier tests fail
-- Capture only the first 50 lines of failure output
-
-If targeted execution is not supported by the detected test framework:
-
-- fall back to running a minimal subset of tests
-- or skip with explanation
+* Run tests **only** for discovered files.
+* **Continue execution** even if earlier tests fail.
+* Capture only the **first 50 lines** of failure output.
+* **Fallback**: If targeted execution is not supported by the framework, run a minimal subset or skip with an explanation.
 
 ## Result Classification
 
-Each test execution must be classified as:
+Classify each execution as:
+* **PASS**: Tests completed successfully.
+* **FAIL**: Tests failed with assertion or runtime errors.
+* **SKIP**: No relevant tests discovered.
+* **TIMEOUT**: Execution exceeded 5 minutes.
 
-- PASS
-- FAIL
-- SKIP
-- TIMEOUT
+## Output & Communication
 
-### PASS
-Tests completed successfully.
+The **qa-engineer** (or the agent assigned to the task) is the owner of this output.
+1.  **Persistence**: Write results to `docs/TEST_REPORT.md`.
+2.  **Decision Log**: Append a summary entry to `docs/DECISIONS.md`.
+3.  **Communicate**: Post the test results to the **Shared Task List**.
 
-### FAIL
-Tests failed with assertion or runtime errors.
-
-### SKIP
-No relevant tests discovered.
-
-### TIMEOUT
-Test execution exceeded 5 minutes.
-
-## Output
-
-Write results to:
-
-`docs/TEST_REPORT.md`
-
-Append summary entry to:
-
-`docs/DECISIONS.md`
-
-## Required Output Structure
-
-# Targeted Test Report
-
-## Summary
-Short overview of targeted test run.
-
-## Changed Files
-| File | Reason |
-
-## Selected Tests
-| Test File | Discovery Method |
-
-## Test Results
-| Test File | Result | Notes |
-
-## Failures
-| Test File | Error Snippet |
-
-Include only first 50 lines of output.
-
-## Limitations
-Document skipped tests, discovery issues, or framework limitations.
+### Required Output Structure (docs/TEST_REPORT.md)
+* **Summary**: Short overview of the targeted test run.
+* **Changed Files**: Table with | File | Reason |.
+* **Selected Tests**: Table with | Test File | Discovery Method |.
+* **Test Results**: Table with | Test File | Result | Notes |.
+* **Failures**: List of Test Files and their **50-line error snippets**.
+* **Limitations**: Document skipped tests, discovery issues, or framework limitations.
 
 ## Completion Rules
 
-If no tests are discovered:
-- mark result as SKIP
-- document discovery limitations
-
-If tests fail:
-- record failures
-- do not attempt fixes
-
-If tests pass:
-- mark the change as validated for the tested scope
+* **No tests discovered**: Mark as `SKIP` and document discovery limitations.
+* **Tests fail**: Record failures; **do not attempt fixes** within this skill.
+* **Tests pass**: Mark the change as **validated** for the tested scope.

@@ -11,134 +11,76 @@ Use this skill to build or update `docs/INVENTORY.md` so downstream agents can u
 This skill is structural only.
 It does not read source file contents.
 
+## Purpose
+
+Document the repository's internal organization and surfaces:
+- repository shape.
+- directory structure.
+- project surfaces.
+- dependency signals.
+- scripts and tooling.
+- key configuration files.
+
 ## Gating Policy
 
-- Cost class: MEDIUM
-- Requires an active milestone
-- Skip if the fingerprint is unchanged and `docs/INVENTORY.md` already exists
-- Never run on every cycle
+- **Cost Class**: LOW-COST (CHEAP).
+- **Authorization**: Requires an active milestone.
+- **Trigger**: Run during **Milestone 1** (Detection & Inventory) or **Milestone 2** (Full Inventory) depending on the playbook.
+- **Skip Conditions**:
+  - Skip if the repository fingerprint is unchanged and `docs/INVENTORY.md` already exists.
+  - Never run on every cycle.
 
 ## Hard Rules
 
-- Maximum directory depth: 3 levels
-- Maximum file reads: 10
-- Read only manifests, config files, and existing documentation
-- Do not read source code contents
-- Exclude:
-  - `node_modules/`
-  - `.git/`
-  - `dist/`
-  - `build/`
-  - `vendor/`
-  - `.next/`
-  - `.turbo/`
-- If `docs/INVENTORY.md` exists, use incremental update mode
-- Preserve any `<!-- manual -->` annotations
-- If `docs/INVENTORY.md` is corrupt, discard it and rebuild from scratch
+- **Maximum directory depth**: 3 levels.
+- **Maximum file reads**: 10.
+- **Read policy**: Read only manifests, config files, and existing documentation.
+- **No source**: Do not read source code contents.
+- **Exclusions**:
+  - `node_modules/`, `.git/`, `dist/`, `build/`, `vendor/`, `.next/`, `.turbo/`.
+- **Persistence**: If `docs/INVENTORY.md` exists, use incremental update mode.
+- **Integrity**: Preserve any `` annotations. If the file is corrupt, discard and rebuild from scratch.
 
 ## Inventory Goals
 
-Document:
+The agent must document the following:
+1. **Repository Shape**: Single app, Monorepo, etc.
+2. **Directory Structure**: Tree view (up to 3 levels).
+3. **Project Surfaces**: Classification as frontend, backend, library, etc.
+4. **Dependency Signals**: Major frameworks and tool signals.
+5. **Scripts**: Key runnable commands.
+6. **Tooling Signals**: Detection of eslint, prettier, jest, turbo, nx, etc.
+7. **Key Configuration Files**: Path and purpose.
 
-- repository shape
-- directory structure
-- project surfaces
-- dependency signals
-- scripts
-- tooling signals
-- key configuration files
+## What to Inspect (High-Signal Files)
 
-## What to inspect
+- `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `nx.json`.
+- `tsconfig.json`, `vite.config.*`, `astro.config.*`, `next.config.*`.
+- `Dockerfile`, `docker-compose.*`.
+- `.husky/*` (first relevant file).
+- `README.md` (only if needed for context).
 
-Typical high-signal files include:
+## Output & Communication
 
-- `package.json`
-- `pnpm-workspace.yaml`
-- `turbo.json`
-- `nx.json`
-- `tsconfig.json`
-- `vite.config.*`
-- `astro.config.*`
-- `next.config.*`
-- `Dockerfile`
-- `docker-compose.*`
-- `.husky/*` first relevant file
-- `README.md` only if needed for repo context
+The **repo-analyzer** is the owner of this artifact. Upon completion:
 
-## Output file
+1. **Persistence**: Write the results to `docs/INVENTORY.md`.
+2. **Decision Log**: Append a short completion note to `docs/DECISIONS.md`.
+3. **Communicate**: Post the inventory summary to the **Shared Task List** so the Team Lead can update the project context.
 
-Write to:
-
-`docs/INVENTORY.md`
-
-Append a short completion note to:
-
-`docs/DECISIONS.md`
-
-## Required Output Structure
-
-# Repository Inventory
-
-## Summary
-Short overview of the repository shape.
-
-## Repository Shape
-State one of:
-- Single application
-- Multi-application
-- Monorepo
-- Hybrid
-
-## Directory Structure
-A tree view up to 3 levels deep.
-
-## Project Surfaces
-| Surface | Path | Type |
-|---------|------|------|
-
-Types may include:
-- frontend
-- backend
-- library
-- tooling
-- infrastructure
-
-## Dependency Signals
-List major dependency sources and important framework/tool signals.
-
-## Scripts
-List key runnable scripts and their commands where available.
-
-## Tooling Signals
-Detect and list:
-- husky
-- lint-staged
-- eslint
-- prettier
-- jest
-- vitest
-- playwright
-- turbo
-- nx
-
-## Key Configuration Files
-List important config files and their locations.
-
-## Limitations
-Record truncation, missing manifests, or uncertainty.
+### Required Inventory Structure (docs/INVENTORY.md)
+- **Summary**: Overview of repository shape.
+- **Repository Shape**: Single application | Multi-application | Monorepo | Hybrid.
+- **Directory Structure**: Tree view up to 3 levels.
+- **Project Surfaces**: Table with Surface, Path, and Type.
+- **Dependency Signals**: Framework and tool signals.
+- **Scripts**: Key scripts and their commands.
+- **Tooling Signals**: Status of linters, testers, and monorepo tools.
+- **Key Configuration Files**: List of paths and locations.
+- **Limitations**: Record truncation or missing manifests.
 
 ## Completion Rules
 
-If no manifest is found:
-- catalog directory structure only
-- add a warning to `docs/INVENTORY.md`
-- append a warning to `docs/DECISIONS.md`
-
-If the repository appears to be a monorepo:
-- record that explicitly
-- stop traversal at 3 levels
-- note truncation clearly
-
-If incremental mode is used:
-- update only changed sections
-- preserve manual annotations
+- **If no manifest is found**: Catalog the directory structure only and add a warning to the report and `docs/DECISIONS.md`.
+- **If Monorepo detected**: Record it explicitly, stop traversal at 3 levels, and note truncation.
+- **Incremental mode**: Update only changed sections and preserve manual annotations.

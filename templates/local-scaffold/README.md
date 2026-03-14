@@ -35,10 +35,3 @@ Copy only what you need:
 # Copy docs templates to your project
 mkdir -p docs
 cp templates/local-scaffold/docs/*.md docs/
-```
-
-## Notes
-
-- `docs/` and `.agent-cache/` are optional project workflows, not universal requirements.
-- `.agent-cache/` is always gitignored — never commit it.
-- Agents treat missing docs as "start fresh" and will create them during their first run.

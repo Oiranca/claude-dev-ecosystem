@@ -11,11 +11,9 @@
 ## Entry Template
 
 ## [YYYY-MM-DD HH:MM] Cycle N
-- Objective: <current goal>
-- Milestone: <active milestone or NONE>
-- Executed: <agents, skills, or validations run>
-- Skipped: <agents, skills, or validations skipped and why>
-- Risks / Blockers: <key blockers or NONE>
-- Result: SUCCESS | PARTIAL | BLOCKED | SKIP
-
-<!-- Decision entries will be appended below -->
+- **Objective**: <current goal>
+- **Milestone**: <active milestone or NONE>
+- **Executed**: <agents, skills, or validations run>
+- **Skipped**: <agents, skills, or validations skipped and why>
+- **Risks / Blockers**: <key blockers or NONE>
+- **Result**: SUCCESS | PARTIAL | BLOCKED | SKIP

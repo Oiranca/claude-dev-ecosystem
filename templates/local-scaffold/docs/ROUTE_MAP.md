@@ -8,7 +8,6 @@ Short description of the repository's route structure.
 ## Routes
 | URL Path | File | Route Type | Dynamic Params | Notes |
 |----------|------|------------|----------------|-------|
-|          |      |            |                |       |
 
 ## Route Groups
 Document notable route groupings, layouts, or namespaces.

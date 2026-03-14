@@ -6,163 +6,115 @@ allowed-tools: ["read", "execute", "edit"]
 
 # Fingerprint
 
-Use this skill as the mandatory first step of every cycle.
+Use this skill as the **mandatory first step of every cycle**.
 
-Its job is to detect whether the repository changed in a meaningful way and decide whether downstream agents should run.
+Its job is to detect whether the repository changed in a meaningful way and decide whether downstream agents should run. This skill does not analyze code; it only detects and classifies change.
 
-This skill does not analyze code.
-It only detects and classifies change.
+## Purpose
+
+- Prevent redundant analysis when no changes exist.
+- Control the execution scope of the Agent Team.
+- Maintain the source of truth for repository state in `.agent-cache/AGENT_STATE.json`.
 
 ## Gating Policy
 
-- Cost class: CHEAP
-- Always run at the beginning of every cycle
-- Never skip
-- No authorization needed
-- If `.agent-cache/AGENT_STATE.json` is missing or corrupt, run anyway and rebuild state
+- **Cost Class**: CHEAP (Low-cost).
+- **Mandatory**: Always run at the beginning of every cycle; never skip.
+- **Authorization**: No explicit authorization needed.
+- **Recovery**: If `.agent-cache/AGENT_STATE.json` is missing or corrupt, run anyway and rebuild state.
 
-## Primary goal
+## Primary Goals
 
-Update:
+1. **Update State**: Update `.agent-cache/AGENT_STATE.json`.
+2. **Log Decision**: Append a short decision entry to `docs/DECISIONS.md`.
 
-- `.agent-cache/AGENT_STATE.json`
-
-Append a short decision entry to:
-
-- `docs/DECISIONS.md`
-
-## Detection strategy
+## Detection Strategy
 
 Use a git-first working-tree strategy.
 
-Preferred commands:
+### Preferred Commands
+1. `git diff --name-only --cached`.
+2. `git diff --name-only`.
+3. `git ls-files --others --exclude-standard`.
 
-1. `git diff --name-only --cached`
-2. `git diff --name-only`
-3. `git ls-files --others --exclude-standard`
+Combine results to detect staged files, unstaged files, and untracked files.
 
-Combine results to detect:
-- staged files
-- unstaged files
-- untracked files
+## Change Classification
 
-If git is unavailable, the repo is not a git repository, git commands fail, or changed file count exceeds 200, use legacy fallback mode.
+Classify the cycle as one of the following:
 
-## Change classification
+### 1. none
+- **Definition**: No changed files detected.
+- **Behavior**: Stop downstream execution; return exit code 2; set `material_change = false`.
 
-Classify the cycle as one of:
+### 2. non-material
+- **Definition**: Changed files detected, but none match material patterns.
+- **Behavior**: Allow downstream execution with limited scope; set `material_change = false`.
 
-- `none`
-- `non-material`
-- `material`
+### 3. material
+- **Definition**: At least one changed file matches material patterns, or legacy fallback is used.
+- **Behavior**: Allow full downstream execution; set `material_change = true`.
 
-### none
-No changed files detected.
+## Material File Categories
 
-Behavior:
-- stop downstream execution
-- return exit code 2
-- set `material_change = false`
-
-### non-material
-Changed files detected, but none match material patterns.
-
-Behavior:
-- allow downstream execution with limited scope
-- set `material_change = false`
-
-### material
-At least one changed file matches material patterns, or legacy fallback is used.
-
-Behavior:
-- allow full downstream execution
-- set `material_change = true`
-
-## Material file categories
-
-Treat these as material signals.
+Treat these as material signals:
 
 ### Dependency and package signals
-- `package.json`
-- lockfiles
-- workspace manifests
+- `package.json`.
+- Lockfiles.
+- Workspace manifests.
 
 ### Build and stack signals
-- `tsconfig.*`
-- `astro.config.*`
-- `vite.config.*`
-- `next.config.*`
-- `nuxt.config.*`
-- `svelte.config.*`
+- `tsconfig.*`.
+- `astro.config.*`.
+- `vite.config.*`.
+- `next.config.*`.
+- `nuxt.config.*`.
+- `svelte.config.*`.
 
 ### Container and runtime signals
-- `Dockerfile`
-- `docker-compose.*`
+- `Dockerfile`.
+- `docker-compose.*`.
 
 ### Deployment signals
-- `netlify.toml`
-- `vercel.json`
-- `.github/workflows/*`
+- `netlify.toml`.
+- `vercel.json`.
+- `.github/workflows/*`.
 
 ### App surface signals
-- `src/pages/**`
-- `src/routes/**`
-- `app/**`
+- `src/pages/**`.
+- `src/routes/**`.
+- `app/**`.
 
-## Fingerprint generation
+## Fingerprint Generation
 
 For changed files only:
+- Prioritize material files first.
+- Hash at most 15 files.
+- Hash raw bytes only; do not parse file contents.
+- Sort file hashes, concatenate them, and compute a final SHA-256 fingerprint.
+- **Deleted files**: Must still count as changes and be recorded in `changed_files`.
 
-- prioritize material files first
-- hash at most 15 files
-- hash raw bytes only
-- do not parse file contents
-- sort file hashes
-- concatenate them
-- compute a final SHA-256 fingerprint
+## Legacy Fallback Mode
 
-Deleted files should still count as changes and should be recorded in `changed_files`.
+Use fallback mode if not inside a git repository, git commands fail, or changed file count exceeds 200.
 
-## Legacy fallback mode
+### Fallback Behavior
+- Use legacy 15 high-signal files.
+- Treat all fallback detections as material.
+- Set `detection_mode = "legacy-fallback"`.
+- Otherwise, set `detection_mode = "git-working-tree"`.
 
-Use fallback mode if:
-- not inside a git repository
-- git commands fail
-- changed file count exceeds 200
+## State File Behavior
 
-Fallback behavior:
-- use legacy 15 high-signal files
-- treat all fallback detections as material
-- set `detection_mode = "legacy-fallback"`
+- **Read Policy**: Read only `.agent-cache/AGENT_STATE.json`. Do not read source files for context.
+- **Corrupt State**: If `.agent-cache/AGENT_STATE.json` is corrupt JSON, delete it and treat the cycle as a first run.
+- **Workspace**: If `docs/` does not exist, create it.
+- **Errors**: If a file cannot be hashed due to permissions, skip it, continue, and record the limitation.
 
-Otherwise set:
-
-- `detection_mode = "git-working-tree"`
-
-## State file behavior
-
-Read only:
-
-- `.agent-cache/AGENT_STATE.json`
-
-Do not read source files for context.
-
-If `.agent-cache/AGENT_STATE.json` is corrupt JSON:
-- delete it
-- treat the cycle as first run
-
-If `docs/` does not exist:
-- create it
-
-If a file cannot be hashed due to permissions:
-- skip that file
-- continue
-- record the limitation
-
-## Required state output
+## Required State Output
 
 Write the following fields to `.agent-cache/AGENT_STATE.json`:
-
 - `fingerprint`
 - `previous_fingerprint`
 - `cycle_count`
@@ -173,28 +125,20 @@ Write the following fields to `.agent-cache/AGENT_STATE.json`:
 - `changed_files`
 - `files_hashed`
 
-## Console output rules
+## Console Output Rules
 
 Print only short structured summary lines:
-- changed files count
-- change type
-- material change yes/no
-- fingerprint hash
+- Changed files count.
+- Change type.
+- Material change (yes/no).
+- Fingerprint hash.
 
-Do not print inline code.
-Do not print verbose debug output.
+*Do not print inline code or verbose debug output.*
 
-## Completion rules
+## Completion Rules & Communication
 
-If `change_type = "none"`:
-- stop downstream execution
-- return exit code 2
-- log the skip in `docs/DECISIONS.md`
+Upon completion, the agent (typically **stack-analyzer**) must **Communicate** the result to the **Shared Task List**.
 
-If `change_type = "non-material"`:
-- continue with limited downstream scope
-- log the reduced-scope path in `docs/DECISIONS.md`
-
-If `change_type = "material"`:
-- continue with full downstream evaluation
-- log the full path in `docs/DECISIONS.md`
+- **If `change_type = "none"`**: Stop downstream execution; return exit code 2; log the skip in `docs/DECISIONS.md`.
+- **If `change_type = "non-material"`**: Continue with limited downstream scope; log the reduced-scope path in `docs/DECISIONS.md`.
+- **If `change_type = "material"`**: Continue with full downstream evaluation; log the full path in `docs/DECISIONS.md`.

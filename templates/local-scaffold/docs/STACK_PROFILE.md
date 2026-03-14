@@ -1,6 +1,6 @@
 # Stack Profile
 
-> Repository knowledge artifact owned by stack-analyzer. Auto-generated from evidence-backed stack detection.
+> Repository knowledge artifact owned by **stack-analyzer**. Auto-generated from evidence-backed stack detection.
 
 ## Summary
 A short paragraph describing the detected stack.
@@ -8,7 +8,6 @@ A short paragraph describing the detected stack.
 ## Stack Table
 | Area | Detected Value | Confidence | Evidence |
 |------|----------------|------------|----------|
-|      |                |            |          |
 
 ## Repository Shape
 - Single app | Monorepo | Hybrid | Mixed
