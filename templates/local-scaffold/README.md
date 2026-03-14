@@ -1,4 +1,4 @@
-# Local Scaffold
+# Local Scaffold (v2)
 
 This directory contains optional templates you can copy into a project repository to enable full multi-agent workflow support.
 
@@ -13,6 +13,8 @@ Repository knowledge artifact templates. Copy these to your project's `docs/` di
 | INVENTORY.md | repo-analyzer | Repository structural inventory |
 | ARCHITECTURE.md | solution-architect | Architecture plan for the current milestone |
 | DECISIONS.md | all agents | Chronological engineering decision log |
+| TASKS.md | product-manager | Human-readable task summary for current cycle |
+| REVIEWS.md | qa-engineer, security-reviewer | Review history and decisions |
 | QA_REPORT.md | qa-engineer | Validation results |
 | SECURITY_REPORT.md | security-reviewer | Security findings |
 | ROUTE_MAP.md | repo-analyzer | Application route inventory |
@@ -25,9 +27,29 @@ MCP configuration templates.
 - `mcp.allowlist.json` — Default read-only allowlist.
 - `mcp.secrets.example` — Example secrets file (never commit real values).
 
+## Runtime Cache Structure
+
+The `.agent-cache/` directory is created automatically by the runtime. Never commit it.
+
+```
+.agent-cache/
+├── tasks.json         # Task State Engine (all tasks and their states)
+├── messages.jsonl     # Agent message log (one JSON object per line)
+├── timeline.log       # Shared audit timeline
+├── locks/             # Named lock files (name.lock)
+│   └── *.lock
+└── repo-map.json      # Repository map cache (optional, created by context-manager)
+```
+
+Add to your `.gitignore`:
+
+```
+.agent-cache/
+```
+
 ## Usage
 
-These templates are **optional**. Agents will create docs/ artifacts from scratch if none exist.
+These templates are **optional**. Agents create docs/ artifacts from scratch if none exist. The `.agent-cache/` directory is created by the runtime on first use.
 
 Copy only what you need:
 
