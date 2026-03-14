@@ -74,3 +74,12 @@ Always validate in this order. Stop at the lowest sufficient level:
 - Prefer minimal changes; avoid modifying unrelated files.
 - Never auto-merge.
 - Do not introduce GitHub Actions unless explicitly requested.
+
+## Validation & Guardrails
+
+All agents must strictly adhere to the local safety scripts:
+
+1. **Pre-edit Safety**: Every file modification is automatically gated by `pre-edit-check.sh`. If it blocks an edit (e.g., protected directories or secrets), do not attempt to bypass it.
+2. **Post-implementation QA**: After any code change, the `qa-engineer` or the Team Lead MUST run:
+   `bash ~/.claude/scripts/validate-local.sh`
+3. **Failure Handling**: If validation fails, read the generated `docs/failure_summary.md` (if available) to identify the root cause before attempting a fix.
