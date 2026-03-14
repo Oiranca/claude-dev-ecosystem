@@ -18,6 +18,7 @@ claude.settings.json
 # Secrets
 ############################################
 
+mcp.secrets.json
 .env
 .env.*
 *.secret
@@ -98,3 +99,4 @@ temp/
 ############################################
 
 command-history-state.json
+
