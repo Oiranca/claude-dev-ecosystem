@@ -14,6 +14,7 @@ Usage:
   python agent-runtime.py task fail --id <id> --reason "..."
   python agent-runtime.py message send --from <a> --to <b> --task-id <id> --type handoff --summary "..."
   python agent-runtime.py message inbox --agent <agent> [--unread]
+  python agent-runtime.py message mark-read --agent <agent>
   python agent-runtime.py lock acquire --name <name> --owner <agent> [--ttl 1800]
   python agent-runtime.py lock release --name <name>
   python agent-runtime.py lock status [--name <name>]
@@ -24,10 +25,13 @@ import argparse
 import fcntl
 import json
 import os
+import re
 import sys
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Union
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -38,7 +42,6 @@ TASKS_FILE = CACHE_DIR / "tasks.json"
 MESSAGES_FILE = CACHE_DIR / "messages.jsonl"
 TIMELINE_FILE = CACHE_DIR / "timeline.log"
 LOCKS_DIR = CACHE_DIR / "locks"
-REPO_MAP_FILE = CACHE_DIR / "repo-map.json"
 
 # ---------------------------------------------------------------------------
 # Schemas
@@ -88,31 +91,56 @@ def die(msg: str, code: int = 1):
     sys.exit(code)
 
 
+def _validate_lock_name(name: str):
+    """Reject lock names that could escape LOCKS_DIR via path traversal."""
+    if not re.match(r"^[A-Za-z0-9_.-]+$", name) or ".." in name:
+        die(
+            f"Invalid lock name '{name}'. "
+            "Use only letters, digits, underscores, hyphens, and dots."
+        )
+
+
 # ---------------------------------------------------------------------------
 # Concurrency-safe file I/O
 # ---------------------------------------------------------------------------
 
 
-def _read_json_locked(path: Path) -> list | dict:
-    """Read JSON file with shared (read) lock."""
-    with open(path, "r") as f:
-        fcntl.flock(f, fcntl.LOCK_SH)
-        try:
-            return json.load(f)
-        finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
+def _io_lock_path(path: Path) -> Path:
+    """Companion lock file used to synchronize JSON reads and writes.
+
+    Kept separate from LOCKS_DIR distributed locks (which use *.lock inside
+    that subdirectory) to avoid any naming collision.
+    """
+    return path.parent / (path.name + ".lk")
 
 
-def _write_json_locked(path: Path, data: list | dict):
-    """Write JSON file atomically with exclusive lock."""
-    tmp = path.with_suffix(".tmp")
-    with open(tmp, "w") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
+def _read_json_locked(path: Path) -> Union[list, dict]:
+    """Read JSON file with shared (read) lock via companion lock file."""
+    with open(_io_lock_path(path), "a+") as lf:
+        fcntl.flock(lf, fcntl.LOCK_SH)
         try:
-            json.dump(data, f, indent=2)
+            with open(path, "r") as f:
+                return json.load(f)
         finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
-    tmp.replace(path)
+            fcntl.flock(lf, fcntl.LOCK_UN)
+
+
+def _write_json_locked(path: Path, data: Union[list, dict]):
+    """Write JSON file atomically with exclusive lock via companion lock file.
+
+    The companion lock file is held for the entire write + rename cycle so that
+    concurrent readers/writers all contend on the same lock rather than each
+    locking their own temp file.
+    """
+    tmp = path.with_name(path.name + f".{uuid.uuid4().hex[:8]}.tmp")
+    with open(_io_lock_path(path), "a+") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            with open(tmp, "w") as f:
+                json.dump(data, f, indent=2)
+            tmp.replace(path)
+        finally:
+            fcntl.flock(lf, fcntl.LOCK_UN)
 
 
 def _append_line_locked(path: Path, line: str):
@@ -264,21 +292,82 @@ def message_inbox(args):
     if not MESSAGES_FILE.exists():
         print("[]")
         return
+
+    raw_lines = MESSAGES_FILE.read_text().splitlines(keepends=True)
     msgs = []
-    with open(MESSAGES_FILE, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
+    updated_lines = []
+    dirty = False
+
+    for line in raw_lines:
+        stripped = line.strip()
+        if not stripped:
+            updated_lines.append(line)
+            continue
+        try:
+            m = json.loads(stripped)
+            if m.get("to") == args.agent:
+                if args.unread and m.get("read"):
+                    updated_lines.append(line)
+                    continue
+                msgs.append(m)
+                if args.unread and not m.get("read"):
+                    m["read"] = True
+                    updated_lines.append(json.dumps(m) + "\n")
+                    dirty = True
+                else:
+                    updated_lines.append(line)
+            else:
+                updated_lines.append(line)
+        except json.JSONDecodeError:
+            updated_lines.append(line)
+            continue
+
+    if dirty:
+        # Rewrite file with read messages marked — use exclusive lock for safety
+        with open(MESSAGES_FILE, "w") as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
             try:
-                m = json.loads(line)
-                if m.get("to") == args.agent:
-                    if args.unread and m.get("read"):
-                        continue
-                    msgs.append(m)
-            except json.JSONDecodeError:
-                continue
+                f.writelines(updated_lines)
+            finally:
+                fcntl.flock(f, fcntl.LOCK_UN)
+
     print(json.dumps(msgs, indent=2))
+
+
+def message_mark_read(args):
+    """Mark all messages addressed to --agent as read."""
+    if not MESSAGES_FILE.exists():
+        print("No messages file found.")
+        return
+
+    raw_lines = MESSAGES_FILE.read_text().splitlines(keepends=True)
+    updated_lines = []
+    count = 0
+
+    for line in raw_lines:
+        stripped = line.strip()
+        if not stripped:
+            updated_lines.append(line)
+            continue
+        try:
+            m = json.loads(stripped)
+            if m.get("to") == args.agent and not m.get("read"):
+                m["read"] = True
+                updated_lines.append(json.dumps(m) + "\n")
+                count += 1
+            else:
+                updated_lines.append(line)
+        except json.JSONDecodeError:
+            updated_lines.append(line)
+
+    with open(MESSAGES_FILE, "w") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            f.writelines(updated_lines)
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
+
+    print(f"Marked {count} message(s) as read for agent '{args.agent}'.")
 
 
 # ---------------------------------------------------------------------------
@@ -287,12 +376,13 @@ def message_inbox(args):
 
 
 def lock_acquire(args):
+    _validate_lock_name(args.name)
     lock_file = LOCKS_DIR / f"{args.name}.lock"
+
+    # Evict expired lock if present
     if lock_file.exists():
         try:
             data = json.loads(lock_file.read_text())
-            import time
-
             age = time.time() - data.get("acquired_at_ts", 0)
             ttl = data.get("ttl", DEFAULT_LOCK_TTL)
             if age < ttl:
@@ -300,11 +390,9 @@ def lock_acquire(args):
                     f"Lock '{args.name}' held by '{data.get('owner')}' "
                     f"(age {int(age)}s, TTL {ttl}s). Wait or release first."
                 )
-            # Expired lock — evict it
+            lock_file.unlink(missing_ok=True)
         except (json.JSONDecodeError, KeyError):
-            pass
-
-    import time
+            lock_file.unlink(missing_ok=True)
 
     payload = {
         "owner": args.owner,
@@ -312,12 +400,20 @@ def lock_acquire(args):
         "acquired_at_ts": time.time(),
         "ttl": args.ttl or DEFAULT_LOCK_TTL,
     }
-    lock_file.write_text(json.dumps(payload))
+    # O_CREAT | O_EXCL is atomic: only one process succeeds even under concurrency.
+    try:
+        fd = os.open(str(lock_file), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        with os.fdopen(fd, "w") as f:
+            json.dump(payload, f)
+    except FileExistsError:
+        die(f"Lock '{args.name}' was acquired concurrently by another process.")
+
     _timeline_write(f"lock.acquired name={args.name} owner={args.owner}")
     print(f"Lock '{args.name}' acquired by '{args.owner}'.")
 
 
 def lock_release(args):
+    _validate_lock_name(args.name)
     lock_file = LOCKS_DIR / f"{args.name}.lock"
     if lock_file.exists():
         lock_file.unlink()
@@ -328,9 +424,8 @@ def lock_release(args):
 
 
 def lock_status(args):
-    import time
-
     if args.name:
+        _validate_lock_name(args.name)
         lock_file = LOCKS_DIR / f"{args.name}.lock"
         if not lock_file.exists():
             print(json.dumps({"name": args.name, "status": "free"}))
@@ -435,7 +530,16 @@ def build_parser() -> argparse.ArgumentParser:
     # message inbox
     mi = msg_sub.add_parser("inbox", help="Read messages for an agent")
     mi.add_argument("--agent", required=True)
-    mi.add_argument("--unread", action="store_true", default=False)
+    mi.add_argument(
+        "--unread",
+        action="store_true",
+        default=False,
+        help="Show only unread messages and mark them as read",
+    )
+
+    # message mark-read
+    mr = msg_sub.add_parser("mark-read", help="Mark all messages for an agent as read")
+    mr.add_argument("--agent", required=True)
 
     # ---- lock ----
     lock_p = sub.add_parser("lock", help="Distributed lock commands")
@@ -476,6 +580,7 @@ def main():
         ("task", "fail"): task_fail,
         ("message", "send"): message_send,
         ("message", "inbox"): message_inbox,
+        ("message", "mark-read"): message_mark_read,
         ("lock", "acquire"): lock_acquire,
         ("lock", "release"): lock_release,
         ("lock", "status"): lock_status,

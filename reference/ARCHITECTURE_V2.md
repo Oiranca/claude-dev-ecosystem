@@ -307,4 +307,4 @@ Key additions in v2:
 | Implementation fails QA | qa-engineer sends `review_result` with REQUEST_CHANGES; software-engineer re-opens task |
 | Critical security issue | security-reviewer sets `blocked`, sends `blocked` message to product-manager; cycle stops |
 | Lock timeout | Lock is auto-evicted after TTL; new agent can claim |
-| Validation script fails | Read `docs/last-run/failure_summary.md`; fix before retry |
+| Validation script fails | Read `.agent-cache/last-run/failure_summary.md`; fix before retry |

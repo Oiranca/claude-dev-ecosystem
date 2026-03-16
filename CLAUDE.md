@@ -11,7 +11,7 @@ This global configuration provides a parallel multi-agent coordination environme
 - **Async Messaging:** Agents communicate between sessions via `messages.jsonl`. Use `message send` for handoffs, `message inbox` to read incoming work.
 - **Context Isolation:** Context is not automatically shared between agents. Team Leads must put all necessary context in the task `--inputs` field.
 - **Docs-First Behavior:** Agents check `docs/STACK_PROFILE.md`, `docs/INVENTORY.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md` before reading source files. If they do not exist, proceed without requiring them.
-- **Minimal Local Footprint:** Do not generate `.agent-cache/` or `reference/` in repositories unless explicitly requested. Rely on Claude's native session state for ephemeral context.
+- **Minimal Local Footprint:** `.agent-cache/` is created automatically by the runtime when the Task State Engine is used — ensure it is listed in `.gitignore`. Do not generate `reference/` in repositories unless explicitly requested. Rely on Claude's native session state for ephemeral context.
 
 ---
 

@@ -284,7 +284,7 @@ Validation order (stop at the lowest sufficient level):
 The script:
 - Detects package manager automatically (yarn/pnpm/bun/npm)
 - Only runs scripts present in `package.json`
-- Captures failure output to `docs/last-run/failure_summary.md`
+- Captures failure output to `.agent-cache/last-run/failure_summary.md`
 - Never commits, pushes, or opens PRs
 - Respects git hooks (husky, lint-staged)
 
