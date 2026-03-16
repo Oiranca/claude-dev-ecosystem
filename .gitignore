@@ -5,13 +5,24 @@
 # Local Claude settings (machine specific)
 settings.json
 claude.settings.json
+settings.local.json
 
-# Claude runtime files
-.claude/
+# Claude runtime state
 .agent-cache/
 .agent-state/
+projects/
 
+# Agent runtime files
+tasks.json
+messages.jsonl
+timeline.log
+repo-map.json
+locks/
+
+############################################
 # Local MCP configs
+############################################
+
 .mcp.local.json
 
 ############################################
@@ -48,7 +59,7 @@ build/
 coverage/
 
 ############################################
-# Python (if any scripts use it)
+# Python
 ############################################
 
 __pycache__/
@@ -81,7 +92,6 @@ Icon?
 # Claude plugin development
 ############################################
 
-# temporary prompt experiments
 prompt-tests/
 scratch/
 tmp/
@@ -90,7 +100,6 @@ tmp/
 # OS / temp
 ############################################
 
-tmp/
 temp/
 .cache/
 
@@ -99,4 +108,3 @@ temp/
 ############################################
 
 command-history-state.json
-
