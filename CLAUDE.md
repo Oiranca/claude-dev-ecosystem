@@ -1,138 +1,344 @@
-# Oiranca's Global Claude Dev Ecosystem — v2
+# Claude Dev Ecosystem — Global Configuration
 
-This global configuration provides a parallel multi-agent coordination environment for Claude Code CLI. It applies to all local repositories accessed via this terminal.
+This file defines the global behavior, coordination model, and execution rules for the Claude development ecosystem.
 
----
-
-## Operating Principles
-
-- **Agent Teams First:** Complex tasks must be orchestrated using parallel Agent Teams. The Team Lead creates a task graph; agents claim and work tasks concurrently.
-- **Task State Engine:** All work is tracked in `.agent-cache/tasks.json` via `python ~/.claude/scripts/agent-runtime.py`. Agents claim tasks, not assignments from the Team Lead.
-- **Async Messaging:** Agents communicate between sessions via `messages.jsonl`. Use `message send` for handoffs, `message inbox` to read incoming work.
-- **Context Isolation:** Context is not automatically shared between agents. Team Leads must put all necessary context in the task `--inputs` field.
-- **Docs-First Behavior:** Agents check `docs/STACK_PROFILE.md`, `docs/INVENTORY.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md` before reading source files. If they do not exist, proceed without requiring them.
-- **Minimal Local Footprint:** `.agent-cache/` is created automatically by the runtime when the Task State Engine is used — ensure it is listed in `.gitignore`. Do not generate `reference/` in repositories unless explicitly requested. Rely on Claude's native session state for ephemeral context.
+It is designed to work across multiple repositories, stacks, and project sizes while remaining efficient, modular, and scalable.
 
 ---
 
-## Agent Roster
+# Core Principles
 
-### Team Leads
-
-| Agent | Model | Role |
-|-------|-------|------|
-| product-manager | sonnet | Plans, scopes, creates task graph, monitors for blockers |
-| pr-comment-responder | sonnet | Specialized Team Lead for PR review response cycles |
-
-### Discovery Agents
-
-| Agent | Model | Role |
-|-------|-------|------|
-| context-manager | haiku | Repo discovery; produces scoped reading plans |
-| stack-analyzer | haiku | Stack detection; produces `docs/STACK_PROFILE.md` |
-| repo-analyzer | haiku | Repository structural inventory; produces `docs/INVENTORY.md` |
-| solution-architect | sonnet | Architecture planning; produces `docs/ARCHITECTURE.md` |
-
-### Execution Agents
-
-| Agent | Model | Role |
-|-------|-------|------|
-| software-engineer | sonnet | Feature implementation and bug fixes |
-| migration-engineer | sonnet | Framework and architecture migrations |
-| devops-engineer | sonnet | Infrastructure and runtime review |
-
-### Review Agents
-
-| Agent | Model | Role |
-|-------|-------|------|
-| qa-engineer | haiku | Quality validation; APPROVE / REQUEST_CHANGES / BLOCKED |
-| security-reviewer | sonnet | Security audit; APPROVE / REQUEST_CHANGES / ESCALATE |
-| tech-writer | haiku | Documentation maintenance |
+- Prefer **small, focused changes** over broad rewrites.
+- Prefer **analysis before implementation** when scope is unclear.
+- Prefer **minimal context usage** over full repository scans.
+- Prefer **existing project conventions** over introducing new patterns.
+- Prefer **gradual validation** over running full pipelines unnecessarily.
 
 ---
 
-## How to Trigger Workflows
+# Agent Teams Usage
 
-Invoke the appropriate Team Lead agent and describe the goal. The Team Lead will create the task graph and let agents self-coordinate:
+## Mandatory: Always Use Agent Teams for Issue Work
 
-- **Feature or bug fix:** Invoke `product-manager` (e.g., *"Run the product-manager to implement issue #42"*).
-- **PR review response:** Invoke `pr-comment-responder` (e.g., *"Run the pr-comment-responder to address PR #17 comments"*).
-
-The Team Lead creates tasks with explicit dependencies. Agents with no unblocked dependencies start immediately in parallel.
+Every GitHub issue — regardless of size — must go through the full agent pipeline.
+The Team Lead never implements code directly. Implementation, QA, and review are always delegated.
 
 ---
 
-## Task State Engine
+## Issue Execution Pipeline
 
-All work flows through the runtime:
+This is the **required sequential flow** for every issue:
 
-```bash
-# Team Lead creates tasks
-python ~/.claude/scripts/agent-runtime.py task create --title "..." --owner <agent> [--depends-on id1,id2] [--inputs "..."]
-
-# Agents claim and work
-python ~/.claude/scripts/agent-runtime.py task claim --id <id> --owner <agent>
-python ~/.claude/scripts/agent-runtime.py task update --id <id> --status running
-python ~/.claude/scripts/agent-runtime.py task complete --id <id> --outputs "..."
-
-# Agents communicate
-python ~/.claude/scripts/agent-runtime.py message send --from <a> --to <b> --type handoff --summary "..."
-python ~/.claude/scripts/agent-runtime.py message inbox --agent <agent> --unread
+```
+Team Lead → software-engineer → qa-engineer ⟲ → security-reviewer (PR)
 ```
 
-Valid task states: `pending` → `claimed` → `running` → `review` → `done` | `failed` | `blocked`
+### Stage 1 — Team Lead (current session)
+- Reads and analyzes the issue
+- Identifies affected files and scope
+- Creates the feature branch
+- Defines tasks for each stage
+- Hands off to software-engineer
+
+### Stage 2 — software-engineer
+- Claims the implementation task
+- Implements the fix/feature on the branch
+- Runs type-check and build to confirm no regressions
+- Sends handoff to qa-engineer
+
+### Stage 3 — qa-engineer (with feedback loop)
+- Writes or updates tests needed to validate the change
+- Runs the test suite
+- **If tests fail** → sends back to software-engineer with details
+- **If tests pass** → sends handoff to security-reviewer
+- The software-engineer/qa-engineer loop repeats until QA is green
+
+### Stage 4 — security-reviewer (Code Review + PR)
+- Reviews the final diff for correctness, security, and style
+- If issues found → sends back to software-engineer
+- If approved → commits, pushes the branch, and opens the PR linked to the issue
 
 ---
 
-## Validation Order & Budgets
+## Team Model
 
-Always validate in this order. Stop at the lowest sufficient level:
-1. `targeted-test-runner` — focused tests for changed files.
-2. `ci-checks` — lint, typecheck, test, build.
-3. `smoke-journeys` — end-to-end route smoke checks (expensive; requires explicit justification).
+- The current Claude session acts as the **Team Lead**.
+- The Team Lead defines:
+  - scope
+  - task breakdown
+  - sequencing
+  - final output
 
-**Skill Budget Tiers:**
-- *Low-cost* (fingerprint, stack-detection, repo-inventory, code-search, context-pruning): Run freely.
-- *Broader validation* (ci-checks, route-mapper, architecture-drift-check): Max 2 runs/cycle, max 1/skill.
-- *High-cost* (smoke-journeys, env-consistency, secret-scan-lite): Max 1/cycle, explicit justification required.
-
----
-
-## Security
-
-- Never expose secrets in outputs.
-- Never commit credentials or tokens.
-- Report vulnerabilities without reproducing sensitive values (location only: file:line).
-- Never echo discovered secrets into generated documentation.
+- Teammates:
+  - claim tasks sequentially per the pipeline above
+  - communicate via handoff messages
+  - never skip a stage
 
 ---
 
-## Scope Rules
+# Task State Engine (Ecosystem Layer)
 
-- Only one active milestone per cycle.
-- Never batch unrelated milestones.
-- Never expand scope beyond the active issue.
-- Prefer minimal changes; avoid modifying unrelated files.
-- Never auto-merge.
-- Do not introduce GitHub Actions unless explicitly requested.
+This ecosystem may use a local runtime for structured coordination.
 
----
+- Task state is stored in:
+  `.agent-cache/tasks.json`
 
-## Validation & Guardrails
+- Runtime entrypoint:
+  `python ~/.claude/scripts/agent-runtime.py`
 
-All agents must strictly adhere to the local safety scripts:
+## Important
 
-1. **Pre-edit Safety**: Every file modification is automatically gated by `pre-edit-check.sh`. If it blocks an edit (protected directories or secrets), do not attempt to bypass it.
-2. **Post-implementation QA**: After any code change, the `qa-engineer` or the Team Lead MUST run:
-   `bash ~/.claude/scripts/validate-local.sh`
-3. **Failure Handling**: If validation fails, read `docs/last-run/failure_summary.md` (if available) to identify the root cause before attempting a fix.
-4. **Lock Hygiene**: Release locks after completing guarded operations. Locks expire after 30 minutes (TTL) and are auto-evicted.
+This is an **ecosystem-level coordination layer**, not a Claude-native requirement.
+
+- Use it when:
+  - running structured multi-agent workflows
+  - coordinating complex parallel tasks
+- Do NOT require it for simple or local tasks
 
 ---
 
-## Reference
+# Agent Context Isolation
 
-- Full architecture: `reference/ARCHITECTURE_V2.md`
-- Team manual: `reference/TEAM_MANUAL.md`
-- Guardrails: `reference/GUARDRAILS.md`
-- Skill budgets: `reference/BUDGETS.md`
+## Core Rule
+
+The Team Lead MUST NOT read files, run searches, or make edits in the main session for tasks that are delegated to agents. Every `Read` / `Edit` / `Bash` call in the main session consumes the shared context window and is visible to the user as noise.
+
+## What the Team Lead does
+
+- Use `Grep` / `Glob` for at most 2–3 targeted queries to identify file paths.
+- Write the agent prompt with: paths, scope, required change, acceptance criteria.
+- Spawn the agent — let it own all reads, writes, and validation internally.
+- Receive only the agent's summary result back.
+
+## What the Team Lead does NOT do
+
+- Read file contents to "understand before delegating" — put the paths in the prompt instead.
+- Copy code snippets or file contents into agent prompts.
+- Apply edits inline and then tell an agent what was changed.
+- Run `yarn build` / `yarn test` / linters when an agent can run them internally.
+
+## Delegation table
+
+| Task type                  | Agent to spawn            | Use `isolation: "worktree"` |
+|----------------------------|---------------------------|-----------------------------|
+| PR comment fixes           | `pr-comment-responder`    | Yes                         |
+| Bug fix / feature          | `software-engineer`       | Yes                         |
+| Exploration / research     | `Explore` or `context-manager` | No                     |
+| Security review            | `security-reviewer`       | No                          |
+| QA / test validation       | `qa-engineer`             | No                          |
+| Architecture planning      | `solution-architect`      | No                          |
+
+## Worktree isolation
+
+For all implementation agents (`software-engineer`, `pr-comment-responder`, `migration-engineer`):
+
+- Set `isolation: "worktree"` so the agent's file reads and writes happen in an isolated git copy.
+- The agent's internal tool calls are NOT visible in the main session — only its final summary is.
+- The worktree is automatically cleaned up if no files were changed.
+
+## What to pass in the agent prompt
+
+**Pass:**
+- File paths identified from Grep/Glob (never file content)
+- The change described in plain language
+- Branch name, acceptance criteria, PR/issue references
+
+**Never pass:**
+- Full file contents copied from a prior `Read`
+- Large code blocks or diffs
+- Tool call output copied from the main session
+
+---
+
+# Context Strategy
+
+## Core Rule
+
+Always identify the **smallest useful working surface** before deep analysis or implementation.
+
+## Preferred Approach
+
+1. Use `Grep` and `Glob` before reading files.
+2. Identify:
+   - entry points
+   - routing layers
+   - module boundaries
+   - config files
+3. Read only the files that are directly relevant.
+
+## Avoid
+
+- scanning entire repositories
+- reading large directories blindly
+- loading unrelated documentation
+
+---
+
+# Documentation Strategy
+
+## Docs-First When Available
+
+If the repository contains:
+
+- `docs/STACK_PROFILE.md`
+- `docs/INVENTORY.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DECISIONS.md`
+
+Agents should read them **when relevant to the task**.
+
+## Important
+
+- If these files do NOT exist → proceed normally
+- Do NOT require documentation to exist
+- Do NOT generate documentation unless explicitly requested
+
+---
+
+# Agent Roles
+
+## Lead-Oriented Agents
+
+These agents influence planning and coordination behavior.
+
+They do NOT replace Claude’s native Team Lead role.
+
+- product-manager
+- pr-comment-responder
+
+---
+
+## Core Specialists (sonnet)
+
+- solution-architect
+- software-engineer
+- migration-engineer
+- security-reviewer
+- devops-engineer
+
+---
+
+## Lightweight Specialists (haiku)
+
+- context-manager
+- repo-analyzer
+- stack-analyzer
+- qa-engineer
+- tech-writer
+
+---
+
+# Execution Rules
+
+## Scope Discipline
+
+- Work only within the **active milestone**.
+- Avoid modifying unrelated files.
+- Do not expand scope unless explicitly required.
+
+## Milestone Rule
+
+- Only **one active milestone per cycle**.
+- Within that milestone:
+  - parallel subtasks are allowed
+  - coordination must remain controlled
+
+---
+
+# Validation Strategy
+
+## Validation Order
+
+1. Targeted validation (closest to the change)
+2. Repository-level validation (if needed)
+3. Full pipeline validation (only when necessary)
+
+Stop at the **lowest sufficient level**.
+
+---
+
+## Post-Implementation QA
+
+After any code change:
+
+- Prefer running:
+  `bash ~/.claude/scripts/validate-local.sh`
+
+- If not available:
+  - use the repository’s native validation flow
+
+---
+
+# Safety & Guardrails
+
+- Never expose secrets or credentials.
+- Never log or output sensitive values.
+- Avoid destructive operations unless explicitly requested.
+- Highlight risks without leaking sensitive data.
+
+---
+
+# Minimal Local Footprint
+
+- `.agent-cache/` is:
+  - created automatically when needed
+  - required for runtime coordination only
+  - never committed to git
+
+- Use:
+  - Claude session state → for reasoning
+  - local runtime → for structured coordination only
+
+---
+
+# Tool Usage Strategy
+
+## Prefer
+
+- Grep
+- Glob
+- Read (targeted)
+
+## Limit
+
+- Bash (only when needed)
+- Write/Edit (only for relevant files)
+
+## Avoid
+
+- broad file reads
+- unnecessary command execution
+- full repository scans
+
+---
+
+# TypeScript Project Rules
+
+## Test Files Must Be Excluded from the App tsconfig
+
+When a project uses Vitest (or any test runner) with `@testing-library/jest-dom` or similar test-only type packages, **always** ensure `tsconfig.app.json` (or equivalent app tsconfig) excludes test files:
+
+```json
+"include": ["src"],
+"exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test"]
+```
+
+**Why:** `tsc -b` runs during `npm run build` and type-checks `tsconfig.app.json`. Test files reference matchers like `toHaveAttribute`, `toBeInTheDocument`, `toHaveClass` whose types only exist in the test tsconfig (e.g. `tsconfig.vitest.json`). Including test files in the app tsconfig causes TS2339 build failures.
+
+**How to apply:**
+- When adding test files to a project, always verify `tsconfig.app.json` has the `exclude` block above.
+- Never remove this `exclude` block.
+- The test tsconfig (e.g. `tsconfig.vitest.json`) should extend the app tsconfig and add test-specific `types` — it must NOT be referenced in the root `tsconfig.json` references array.
+- After writing any test file, run `npm run build` (not just `npm test`) to confirm the app tsconfig is not broken.
+
+---
+
+# Final Rule
+
+Be precise.
+
+Be minimal.
+
+Be structured.
+
+Only use complexity when it provides clear value.
