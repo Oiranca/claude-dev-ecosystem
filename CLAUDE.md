@@ -16,6 +16,68 @@ It is designed to work across multiple repositories, stacks, and project sizes w
 
 ---
 
+# Absolute Git Prohibitions (Global — all repos)
+
+## NEVER create issues in Todo status when a PR already exists
+
+When creating an issue that has work immediately starting (or already has an open PR), move it to "In Progress" on the GitHub Project board before or at the same moment as creating the branch. An issue with an open PR must NEVER sit in "Todo".
+
+---
+
+## ALWAYS move an issue to "In Progress" when work begins
+
+As soon as work starts on any GitHub issue — whether creating a branch, making edits, or delegating to an agent — move that issue to "In Progress" on the GitHub Project board immediately.
+
+**Why:** Issues left in "Todo" while actively being worked on create false visibility into actual sprint state and confuse prioritization.
+
+**How to apply:**
+- At Stage 1 (Team Lead), before handing off to the software-engineer, run:
+  `gh project item-edit` or the appropriate `gh` command to move the issue to "In Progress".
+- This must happen before any implementation begins — not after the PR is opened.
+- If the project board ID or project number is unknown, retrieve it with `gh project list` first.
+- Never start a branch or delegate implementation without first confirming the issue is in "In Progress".
+
+---
+
+## NEVER merge branches or PRs
+
+Claude (and any agent Claude spawns) must **NEVER** merge branches or PRs. This includes:
+- `gh pr merge` — forbidden
+- `git merge` into integration branches (develop, main, release/*) — forbidden
+- `git rebase` onto integration branches — forbidden
+
+**Why:** Merges into develop/main/release are always done manually by the user. PRs remain open as review artifacts even after their branch code lands in develop.
+
+**The correct workflow:**
+1. Feature branch → open PR (targeting `develop`)
+2. User manually merges the branch into `develop` via git (not GitHub UI) — PRs stay open
+3. When migration complete → user creates `release/YYYY-MM-DD` from `develop`
+4. Only the user decides when to merge to `main`
+
+**Each issue gets its own independent branch.** Never combine multiple issues in one branch unless explicitly requested.
+
+If a user says "merge branches into the final branch" — they mean: help them understand the dependency order so THEY can merge manually. Do not execute the merge yourself.
+
+---
+
+---
+
+# Check Open PRs Before Implementing (Global — all repos)
+
+Before modifying any file, run `gh pr list --state open` and check whether an existing open PR already touches the same file or solves the same problem.
+
+**Why:** Reimplementing work that is already in an open PR creates unnecessary conflicts and wastes review cycles.
+
+**How to apply:**
+- At the start of every task, scan open PRs for file overlap with the planned changes.
+- If an open PR covers the same file(s):
+  1. Inform the user of the overlap.
+  2. If the existing PR already resolves the change correctly, skip reimplementing it.
+  3. If the existing PR is incomplete, merge it into the working branch first (`git merge --no-ff origin/<branch>`) before proceeding.
+- Never reimplement something already in an open PR without reviewing it first.
+
+---
+
 # Agent Teams Usage
 
 ## Mandatory: Always Use Agent Teams for Issue Work
@@ -99,9 +161,18 @@ This is an **ecosystem-level coordination layer**, not a Claude-native requireme
 
 # Agent Context Isolation
 
-## Core Rule
+## Core Rule — The Team Lead ONLY orchestrates. It NEVER implements.
 
-The Team Lead MUST NOT read files, run searches, or make edits in the main session for tasks that are delegated to agents. Every `Read` / `Edit` / `Bash` call in the main session consumes the shared context window and is visible to the user as noise.
+This is absolute. No exceptions — not even for "quick fixes", "small surgical edits", or "one-line changes". If code needs to change, a `software-engineer` agent with `isolation: "worktree"` does it. Always.
+
+The Team Lead MUST NOT:
+- Read file contents (`Read` tool)
+- Edit or write files (`Edit` / `Write` tools)
+- Run build, test, lint, or any implementation commands (`Bash`)
+- Search file contents for implementation purposes (`Grep`)
+- Make any code change directly in the main session — ever, under any circumstance
+
+Every agent has its own context window. Work done in the main session contaminates that isolation. Task size is irrelevant — there are no exceptions.
 
 ## What the Team Lead does
 
@@ -109,6 +180,7 @@ The Team Lead MUST NOT read files, run searches, or make edits in the main sessi
 - Write the agent prompt with: paths, scope, required change, acceptance criteria.
 - Spawn the agent — let it own all reads, writes, and validation internally.
 - Receive only the agent's summary result back.
+- Coordinate sequencing and handoffs between agents.
 
 ## What the Team Lead does NOT do
 
@@ -116,6 +188,7 @@ The Team Lead MUST NOT read files, run searches, or make edits in the main sessi
 - Copy code snippets or file contents into agent prompts.
 - Apply edits inline and then tell an agent what was changed.
 - Run `yarn build` / `yarn test` / linters when an agent can run them internally.
+- Fix test failures, build errors, or lint issues directly — spawn a `software-engineer` for that.
 
 ## Delegation table
 
@@ -135,6 +208,36 @@ For all implementation agents (`software-engineer`, `pr-comment-responder`, `mig
 - Set `isolation: "worktree"` so the agent's file reads and writes happen in an isolated git copy.
 - The agent's internal tool calls are NOT visible in the main session — only its final summary is.
 - The worktree is automatically cleaned up if no files were changed.
+
+## Worktree cleanup (mandatory)
+
+After every agent session that used `isolation: "worktree"`, clean up orphaned worktrees:
+
+```bash
+git worktree prune
+rm -rf .claude/worktrees/
+```
+
+**Why:** VS Code Source Control detects every `.claude/worktrees/agent-*` directory as a separate git repository and lists them all under Source Control, polluting the workspace.
+
+**How to apply:**
+- Run cleanup after finishing a work session or a set of agent tasks.
+- Never leave orphaned worktrees in the repo between sessions.
+
+---
+
+## Playwright / tooling artifact cleanup
+
+Screenshots, PDFs and videos generated by `playwright-cli` or other tooling land in the repo root as `*.png`, `*.pdf`, `*.webm`.
+
+**Rule:**
+- While actively debugging a visual issue: keep the files — they are useful for comparison.
+- When the issue is resolved or the session ends: delete all loose artifact files from the repo root before finishing.
+
+**How to apply:**
+- Every repo must have `*.png`, `*.pdf`, `*.webm` in its `.gitignore`.
+- At the end of any session that used Playwright: run `rm -f *.png *.pdf *.webm` in the repo root.
+- Never commit screenshots or tooling artifacts.
 
 ## What to pass in the agent prompt
 
