@@ -105,6 +105,7 @@ Icon?
 *.swp
 *.swo
 *.tmp
+.!*
 
 ##################################################
 # Development scratch
@@ -121,3 +122,25 @@ temp/
 ##################################################
 
 command-history-state.json
+
+##################################################
+# Codex / local tool runtime state
+##################################################
+
+antigravity/
+debug/
+history/
+image-cache/
+session-env/
+telemetry/
+
+extension_integrity.json
+installation_id
+oauth_creds.json
+projects.json
+state.json
+trustedFolders.json
+
+extensions/extension-enablement.json
+
+skills/.DS_Store
