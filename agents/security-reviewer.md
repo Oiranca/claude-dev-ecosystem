@@ -48,7 +48,7 @@ python ~/.claude/scripts/agent-runtime.py task update --id <id> --status running
 
 Read the message's `files` field — audit the specific files that changed, plus their dependencies. Also read:
 - `docs/STACK_PROFILE.md`, `docs/ARCHITECTURE.md` when they exist.
-- `.agent-cache/skill_budget_state.json` to avoid re-running high-cost skills already used this cycle.
+- If `.agent-cache/skill_budget_state.json` exists, check it to avoid re-running high-cost skills already used this cycle.
 
 ## Step 3 — Audit
 

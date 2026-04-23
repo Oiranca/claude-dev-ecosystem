@@ -30,8 +30,8 @@ Keep work local if scope is still unclear, edits would overlap, or one answer de
 1. Decompose each lane into: goal, owner, allowed files, forbidden files, validation, dependency.
 2. If two lanes need the same file, merge them into one lane or keep that work local.
 3. Pick the narrowest role that fits:
-   - discovery: `context-manager` or `explorer`
-   - implementation: `software-engineer` or `worker`
+   - discovery: `context-manager` or `repo-analyzer`
+   - implementation: `software-engineer` or `migration-engineer`
    - review: `qa-engineer`, `security-reviewer`
    - infra: `devops-engineer`
    - migration: `migration-engineer`

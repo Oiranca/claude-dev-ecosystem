@@ -5,7 +5,7 @@ description: "Use when creating or revising Claude Code skills or agents and you
 
 # Skill Authoring TDD
 
-Use this skill when authoring skills for Gemini CLI.
+Use this skill when authoring skills or agents for Claude Code.
 
 ## Principles
 
@@ -60,7 +60,7 @@ Prefer removing text over adding text unless the failure proves a real gap.
 - Trigger is specific enough to fire on the right tasks.
 - Description does not contain workflow shortcuts that let the model skip the body.
 - Workflow is actionable and ordered.
-- Tool guidance matches Gemini CLI, not another runtime.
+- Tool guidance matches Claude Code tools, not another runtime.
 - References are one level deep from `SKILL.md`.
 - No legacy mentions to tools that do not exist in this environment.
 

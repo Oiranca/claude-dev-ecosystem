@@ -101,7 +101,7 @@ This state may capture:
 - recorded skill runs
 - skip reasons
 
-Agents should consult this state before re-running expensive work.
+Agents should consult this state before re-running expensive work, when present.
 
 ---
 
