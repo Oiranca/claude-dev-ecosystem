@@ -21,8 +21,7 @@ A parallel multi-agent development environment for Claude Code CLI. Provides a f
 agents/                 # 12 specialized agent role definitions
 skills/                 # 15 reusable skill definitions (SKILL.md per skill)
 commands/               # 7 workflow orchestrations
-hooks/
-  hooks.json            # PreToolUse safety gates
+settings.json           # Claude Code settings (hooks: PreToolUse, SessionStart, Stop)
 scripts/
   pre-edit-check.sh     # Edit safety gate (hook script)
   validate-local.sh     # Validation runner (lint/typecheck/test/build)
@@ -54,7 +53,7 @@ Installed once. Applies to all repositories.
 ├── agents/
 ├── skills/
 ├── commands/
-├── hooks/hooks.json
+├── settings.json              # Hooks: PreToolUse, SessionStart, Stop
 ├── scripts/
 │   ├── pre-edit-check.sh
 │   ├── validate-local.sh

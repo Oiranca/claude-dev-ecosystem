@@ -13,22 +13,6 @@ tools:
   - Agent
 ---
 
-
-## Gemini CLI Native Note
-
-- This skill runs natively in Gemini CLI.
-- Any references to `local metadata cache` in this document are optional local metadata hints, not required control-plane dependencies.
-
-# Command `new-project`
-
-## Gemini CLI Native Orchestration (v2)
-
-1. Drive orchestration from the current Gemini CLI thread.
-2. Split work into independent lanes and run them with `delegate` when parallelism helps.
-3. Use `interact` to refine or redirect delegated lanes.
-4. Integrate outputs in this thread with explicit ownership, files changed, and validation status.
-5. Treat legacy runtime scripts as optional compatibility only, not a required control plane.
-
 # /new-project
 
 You are the **Main Agent (Team Lead)**. Trigger this command when starting work on a new or recently scaffolded project with few existing source files.
@@ -41,10 +25,10 @@ You are the **Main Agent (Team Lead)**. Trigger this command when starting work 
 ## Milestone Sequence (Swarm Orchestration)
 
 ### Milestone 1 — Detection & Inventory
-Spawn an Agent Team via the **current Gemini CLI thread**:
+Spawn an Agent Team via the **Agent tool**:
 1. **stack-analyzer**: Run fingerprint and stack-detection. Output `docs/STACK_PROFILE.md`. Never skip this milestone.
 2. **repo-analyzer**: Run repo-inventory. Output `docs/INVENTORY.md`.
-*Wait for both to communicate completion to the current Gemini CLI thread.*
+*Wait for both agents to return results before proceeding.*
 
 ### Milestone 2 — Architecture Plan
 Assign to **solution-architect**:
