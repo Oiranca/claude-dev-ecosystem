@@ -1,6 +1,6 @@
 ---
 name: "repo-task-orchestrator"
-description: "Use for repository implementation work that is not primarily review, audit, or safe refactor, when you need one Gemini CLI-native workflow for triage, scoping, delegation, and closure."
+description: "Use for repository implementation work that is not primarily review, audit, or safe refactor, when you need one Claude Code-native workflow for triage, scoping, delegation, and closure."
 ---
 
 # Repo Task Orchestrator

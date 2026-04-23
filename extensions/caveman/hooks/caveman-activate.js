@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// caveman — Gemini CLI SessionStart activation hook
+// caveman — Claude Code / Gemini CLI SessionStart activation hook
 //
 // Runs on every session start:
 //   1. Writes flag file at $GEMINI_CONFIG_DIR/.caveman-active (statusline reads this)
@@ -11,9 +11,9 @@ const path = require('path');
 const os = require('os');
 const { getDefaultMode, safeWriteFlag } = require('./caveman-config');
 
-const geminiDir = process.env.GEMINI_CONFIG_DIR || path.join(os.homedir(), '.gemini');
-const flagPath = path.join(geminiDir, '.caveman-active');
-const settingsPath = path.join(geminiDir, 'settings.json');
+const claudeDir = process.env.CLAUDE_CONFIG_DIR || process.env.GEMINI_CONFIG_DIR || path.join(os.homedir(), '.claude');
+const flagPath = path.join(claudeDir, '.caveman-active');
+const settingsPath = path.join(claudeDir, 'settings.json');
 
 const mode = getDefaultMode();
 
@@ -132,7 +132,7 @@ try {
     output += "\n\n" +
       "STATUSLINE SETUP NEEDED: The caveman plugin includes a statusline badge showing active mode " +
       "(e.g. [CAVEMAN], [CAVEMAN:ULTRA]). It is not configured yet. " +
-      "To enable, add this to " + path.join(geminiDir, 'settings.json') + ": " +
+      "To enable, add this to " + path.join(claudeDir, 'settings.json') + ": " +
       statusLineSnippet + " " +
       "Proactively offer to set this up for the user on first interaction.";
   }
