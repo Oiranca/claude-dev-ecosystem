@@ -323,13 +323,14 @@ def message_inbox(args):
             continue
 
     if dirty:
-        # Rewrite file with read messages marked — use exclusive lock for safety
-        with open(MESSAGES_FILE, "w") as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
+        # Rewrite file with read messages marked — use companion lock for safety
+        with open(_io_lock_path(MESSAGES_FILE), "a+") as lf:
+            fcntl.flock(lf, fcntl.LOCK_EX)
             try:
-                f.writelines(updated_lines)
+                with open(MESSAGES_FILE, "w") as f:
+                    f.writelines(updated_lines)
             finally:
-                fcntl.flock(f, fcntl.LOCK_UN)
+                fcntl.flock(lf, fcntl.LOCK_UN)
 
     print(json.dumps(msgs, indent=2))
 
