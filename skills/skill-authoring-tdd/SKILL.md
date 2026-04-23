@@ -1,6 +1,6 @@
 ---
 name: "skill-authoring-tdd"
-description: "Use when creating or revising Gemini CLI skills and you need concise structure plus validation before rollout."
+description: "Use when creating or revising Claude Code skills or agents and you need concise structure plus validation before rollout."
 ---
 
 # Skill Authoring TDD
