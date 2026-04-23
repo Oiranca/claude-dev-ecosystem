@@ -1,5 +1,5 @@
 """
-Run each prompt through Gemini CLI in three conditions and snapshot the
+Run each prompt through Claude Code in three conditions and snapshot the
 real LLM outputs:
 
   1. baseline      — no extra system prompt at all
@@ -16,7 +16,7 @@ evals/snapshots/results.json. Run it locally when SKILL.md files change.
 The CI-side `measure.py` only reads the snapshot and counts tokens.
 
 Requires:
-  - `claude` CLI on PATH (Gemini CLI), authenticated
+  - `claude` CLI on PATH (Claude Code), authenticated
 
 Run: uv run python evals/llm_run.py
 

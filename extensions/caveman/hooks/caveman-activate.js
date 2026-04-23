@@ -2,7 +2,7 @@
 // caveman — Claude Code SessionStart activation hook (Claude Code uses scripts/caveman-init.sh)
 //
 // Runs on every session start:
-//   1. Writes flag file at $GEMINI_CONFIG_DIR/.caveman-active (statusline reads this)
+//   1. Writes flag file at $CLAUDE_CONFIG_DIR/.caveman-active (statusline reads this)
 //   2. Emits caveman ruleset as hidden SessionStart context
 //   3. Detects missing statusline config and emits setup nudge
 
@@ -49,7 +49,7 @@ const modeLabel = mode === 'wenyan' ? 'wenyan-full' : mode;
 
 // Read SKILL.md — the single source of truth for caveman behavior.
 // Plugin installs: __dirname = <plugin_root>/hooks/, SKILL.md at <plugin_root>/skills/caveman/SKILL.md
-// Standalone installs: __dirname = $GEMINI_CONFIG_DIR/hooks/, SKILL.md won't exist — falls back to hardcoded rules.
+// Standalone installs: __dirname = $CLAUDE_CONFIG_DIR/hooks/, SKILL.md won't exist — falls back to hardcoded rules.
 let skillContent = '';
 try {
   skillContent = fs.readFileSync(

@@ -1,7 +1,7 @@
 {
   "metadata": {
     "generated_at": "2026-04-08T22:01:24.027359+00:00",
-    "claude_cli_version": "2.1.97 (Gemini CLI)",
+    "claude_cli_version": "2.1.97 (Claude Code)",
     "model": "claude-opus-4-6",
     "n_prompts": 10,
     "terse_prefix": "Answer concisely."

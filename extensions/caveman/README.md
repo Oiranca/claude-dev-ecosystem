@@ -25,7 +25,7 @@
 
 ---
 
-A [Gemini CLI](https://docs.anthropic.com/en/docs/claude-code) skill/plugin and Gemini CLI plugin that makes agent talk like caveman — cutting **~75% of output tokens** while keeping full technical accuracy. Now with [文言文 mode](#文言文-wenyan-mode), [terse commits](#caveman-commit), [one-line code reviews](#caveman-review), and a [compression tool](#caveman-compress) that cuts **~46% of input tokens** every session.
+A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skill/plugin and Claude Code plugin that makes agent talk like caveman — cutting **~75% of output tokens** while keeping full technical accuracy. Now with [文言文 mode](#文言文-wenyan-mode), [terse commits](#caveman-commit), [one-line code reviews](#caveman-review), and a [compression tool](#caveman-compress) that cuts **~46% of input tokens** every session.
 
 Based on the viral observation that caveman-speak dramatically reduces LLM token usage without losing technical substance. So we made it a one-line install.
 
@@ -35,14 +35,14 @@ Based on the viral observation that caveman-speak dramatically reduces LLM token
 <tr>
 <td width="50%">
 
-### 🗣️ Normal Gemini CLI (69 tokens)
+### 🗣️ Normal Claude Code (69 tokens)
 
 > "The reason your React component is re-rendering is likely because you're creating a new object reference on each render cycle. When you pass an inline object as a prop, React's shallow comparison sees it as a different object every time, which triggers a re-render. I'd recommend using useMemo to memoize the object."
 
 </td>
 <td width="50%">
 
-### 🪨 Caveman Gemini CLI (19 tokens)
+### 🪨 Caveman Claude Code (19 tokens)
 
 > "New object ref each render. Inline object prop = new ref = re-render. Wrap in `useMemo`."
 
@@ -51,14 +51,14 @@ Based on the viral observation that caveman-speak dramatically reduces LLM token
 <tr>
 <td>
 
-### 🗣️ Normal Gemini CLI
+### 🗣️ Normal Claude Code
 
 > "Sure! I'd be happy to help you with that. The issue you're experiencing is most likely caused by your authentication middleware not properly validating the token expiry. Let me take a look and suggest a fix."
 
 </td>
 <td>
 
-### 🪨 Caveman Gemini CLI
+### 🪨 Caveman Claude Code
 
 > "Bug in auth middleware. Token expiry check use `<` not `<=`. Fix:"
 
@@ -126,9 +126,9 @@ Pick your agent. One command. Done.
 
 | Agent | Install |
 |-------|---------|
-| **Gemini CLI** | `claude plugin marketplace add JuliusBrussee/caveman && claude plugin install caveman@caveman` |
-| **Gemini CLI** | Clone repo → `/plugins` → Search "Caveman" → Install |
-| **Gemini CLI** | `gemini extensions install https://github.com/JuliusBrussee/caveman` |
+| **Claude Code** | `claude plugin marketplace add JuliusBrussee/caveman && claude plugin install caveman@caveman` |
+| **Claude Code** | Clone repo → `/plugins` → Search "Caveman" → Install |
+| **Claude Code** | `gemini extensions install https://github.com/JuliusBrussee/caveman` |
 | **Cursor** | `npx skills add JuliusBrussee/caveman -a cursor` |
 | **Windsurf** | `npx skills add JuliusBrussee/caveman -a windsurf` |
 | **Copilot** | `npx skills add JuliusBrussee/caveman -a github-copilot` |
@@ -139,9 +139,9 @@ Install once. Use in every session for that install target after that. One rock.
 
 ### What You Get
 
-Auto-activation is built in for Gemini CLI, Gemini CLI, and the repo-local Gemini CLI setup below. `npx skills add` installs the skill for other agents, but does **not** install repo rule/instruction files, so Caveman does not auto-start there unless you add the always-on snippet below.
+Auto-activation is built in for Claude Code, Claude Code, and the repo-local Claude Code setup below. `npx skills add` installs the skill for other agents, but does **not** install repo rule/instruction files, so Caveman does not auto-start there unless you add the always-on snippet below.
 
-| Feature | Gemini CLI | Gemini CLI | Gemini CLI | Cursor | Windsurf | Cline | Copilot |
+| Feature | Claude Code | Claude Code | Claude Code | Cursor | Windsurf | Cline | Copilot |
 |---------|:-----------:|:-----:|:----------:|:------:|:--------:|:-----:|:-------:|
 | Caveman mode | Y | Y | Y | Y | Y | Y | Y |
 | Auto-activate every session | Y | Y¹ | Y | —² | —² | —² | —² |
@@ -154,17 +154,17 @@ Auto-activation is built in for Gemini CLI, Gemini CLI, and the repo-local Gemin
 | caveman-help | Y | — | Y | Y | Y | Y | Y |
 
 > [!NOTE]
-> Auto-activation works differently per agent: Gemini CLI uses SessionStart hooks, this repo's Gemini CLI dogfood setup uses `.codex/hooks.json`, Gemini uses context files. Cursor/Windsurf/Cline/Copilot can be made always-on, but `npx skills add` installs only the skill, not the repo rule/instruction files.
+> Auto-activation works differently per agent: Claude Code uses SessionStart hooks, this repo's Claude Code dogfood setup uses `.codex/hooks.json`, Claude Code uses context files. Cursor/Windsurf/Cline/Copilot can be made always-on, but `npx skills add` installs only the skill, not the repo rule/instruction files.
 >
-> ¹ Gemini CLI uses `$caveman` syntax, not `/caveman`. This repo ships `.codex/hooks.json`, so caveman auto-starts when you run Gemini CLI inside this repo. The installed plugin itself gives you `$caveman`; copy the same hook into another repo if you want always-on behavior there too. caveman-commit and caveman-review are not in the Gemini CLI plugin bundle — use the SKILL.md files directly.
+> ¹ Claude Code uses `$caveman` syntax, not `/caveman`. This repo ships `.codex/hooks.json`, so caveman auto-starts when you run Claude Code inside this repo. The installed plugin itself gives you `$caveman`; copy the same hook into another repo if you want always-on behavior there too. caveman-commit and caveman-review are not in the Claude Code plugin bundle — use the SKILL.md files directly.
 > ² Add the "Want it always on?" snippet below to those agents' system prompt or rule file if you want session-start activation.
 > ³ Cursor and Windsurf receive the full SKILL.md with all intensity levels. Mode switching works on-demand via the skill; no slash command.
-> ⁴ Available in Gemini CLI, but plugin install only nudges setup. Standalone `install.sh` / `install.ps1` configures it automatically when no custom `statusLine` exists.
+> ⁴ Available in Claude Code, but plugin install only nudges setup. Standalone `install.sh` / `install.ps1` configures it automatically when no custom `statusLine` exists.
 
 <details>
-<summary><strong>Gemini CLI — full details</strong></summary>
+<summary><strong>Claude Code — full details</strong></summary>
 
-The plugin install gives you skills + auto-loading hooks. If no custom `statusLine` is configured, Caveman nudges Gemini CLI to offer badge setup on first session.
+The plugin install gives you skills + auto-loading hooks. If no custom `statusLine` is configured, Caveman nudges Claude Code to offer badge setup on first session.
 
 ```bash
 claude plugin marketplace add JuliusBrussee/caveman
@@ -184,27 +184,27 @@ Or from a local clone: `bash hooks/install.sh` / `powershell -File hooks\install
 
 Uninstall: `bash hooks/uninstall.sh` or `powershell -File hooks\uninstall.ps1`
 
-**Statusline badge:** Shows `[CAVEMAN]`, `[CAVEMAN:ULTRA]`, etc. in your Gemini CLI status bar.
+**Statusline badge:** Shows `[CAVEMAN]`, `[CAVEMAN:ULTRA]`, etc. in your Claude Code status bar.
 
-- **Plugin install:** If you do not already have a custom `statusLine`, Gemini CLI should offer to configure it on first session
+- **Plugin install:** If you do not already have a custom `statusLine`, Claude Code should offer to configure it on first session
 - **Standalone install:** Configured automatically by `install.sh` / `install.ps1` unless you already have a custom statusline
 - **Custom statusline:** Installer leaves your existing statusline alone. See [`hooks/README.md`](hooks/README.md) for the merge snippet
 
 </details>
 
 <details>
-<summary><strong>Gemini CLI — full details</strong></summary>
+<summary><strong>Claude Code — full details</strong></summary>
 
 **macOS / Linux:**
-1. Clone repo → Open Gemini CLI in the repo directory → `/plugins` → Search "Caveman" → Install
+1. Clone repo → Open Claude Code in the repo directory → `/plugins` → Search "Caveman" → Install
 2. Repo-local auto-start is already wired by `.codex/hooks.json` + `.codex/config.toml`
 
 **Windows:**
 1. Enable symlinks first: `git config --global core.symlinks true` (requires Developer Mode or admin)
-2. Clone repo → Open VS Code → Gemini CLI Settings → Plugins → find "Caveman" under local marketplace → Install → Reload Window
-3. Gemini CLI hooks are currently disabled on Windows, so use `$caveman` to start manually
+2. Clone repo → Open VS Code → Claude Code Settings → Plugins → find "Caveman" under local marketplace → Install → Reload Window
+3. Claude Code hooks are currently disabled on Windows, so use `$caveman` to start manually
 
-This repo also ships `.codex/hooks.json` and enables hooks in `.codex/config.toml`, so caveman auto-activates while you run Gemini CLI inside this repo on macOS/Linux. The installed plugin gives you `$caveman`; if you want always-on behavior in other repos too, copy the same `SessionStart` hook there and enable:
+This repo also ships `.codex/hooks.json` and enables hooks in `.codex/config.toml`, so caveman auto-activates while you run Claude Code inside this repo on macOS/Linux. The installed plugin gives you `$caveman`; if you want always-on behavior in other repos too, copy the same `SessionStart` hook there and enable:
 
 ```toml
 [features]
@@ -214,7 +214,7 @@ codex_hooks = true
 </details>
 
 <details>
-<summary><strong>Gemini CLI — full details</strong></summary>
+<summary><strong>Claude Code — full details</strong></summary>
 
 ```bash
 gemini extensions install https://github.com/JuliusBrussee/caveman
@@ -222,7 +222,7 @@ gemini extensions install https://github.com/JuliusBrussee/caveman
 
 Update: `gemini extensions update caveman` · Uninstall: `gemini extensions uninstall caveman`
 
-Auto-activates via `GEMINI.md` context file. Also ships custom Gemini commands:
+Auto-activates via `GEMINI.md` context file. Also ships custom Claude Code commands:
 - `/caveman` — switch intensity level (lite/full/ultra/wenyan)
 - `/caveman-commit` — generate terse commit message
 - `/caveman-review` — one-line code review
@@ -292,7 +292,7 @@ Where to put it:
 ## Usage
 
 Trigger with:
-- `/caveman` or Gemini CLI `$caveman`
+- `/caveman` or Claude Code `$caveman`
 - "talk like caveman"
 - "caveman mode"
 - "less tokens please"
@@ -335,16 +335,16 @@ Level stick until you change it or session end.
 
 ### caveman-compress
 
-`/caveman:compress <filepath>` — caveman make Gemini CLI *speak* with fewer tokens. **Compress** make Gemini CLI *read* fewer tokens.
+`/caveman:compress <filepath>` — caveman make Claude Code *speak* with fewer tokens. **Compress** make Claude Code *read* fewer tokens.
 
-Your `CLAUDE.md` loads on **every session start**. Caveman Compress rewrites memory files into caveman-speak so Gemini CLI reads less — without you losing the human-readable original.
+Your `CLAUDE.md` loads on **every session start**. Caveman Compress rewrites memory files into caveman-speak so Claude Code reads less — without you losing the human-readable original.
 
 ```
 /caveman:compress CLAUDE.md
 ```
 
 ```
-CLAUDE.md          ← compressed (Gemini CLI reads this every session — fewer tokens)
+CLAUDE.md          ← compressed (Claude Code reads this every session — fewer tokens)
 CLAUDE.original.md ← human-readable backup (you read and edit this)
 ```
 
@@ -361,7 +361,7 @@ Code blocks, URLs, file paths, commands, headings, dates, version numbers — an
 
 ## Benchmarks
 
-Real token counts from the Gemini CLI API ([reproduce it yourself](benchmarks/)):
+Real token counts from the Claude Code API ([reproduce it yourself](benchmarks/)):
 
 <!-- BENCHMARK-TABLE-START -->
 | Task | Normal (tokens) | Caveman (tokens) | Saved |
@@ -390,7 +390,7 @@ A March 2026 paper ["Brevity Constraints Reverse Performance Hierarchies in Lang
 
 Caveman not just claim 75%. Caveman **prove** it.
 
-The `evals/` directory has a three-arm eval harness that measures real token compression against a proper control — not just "verbose vs skill" but "terse vs skill". Because comparing caveman to verbose Gemini CLI conflate the skill with generic terseness. That cheating. Caveman not cheat.
+The `evals/` directory has a three-arm eval harness that measures real token compression against a proper control — not just "verbose vs skill" but "terse vs skill". Because comparing caveman to verbose Claude Code conflate the skill with generic terseness. That cheating. Caveman not cheat.
 
 ```bash
 # Run the eval (needs claude CLI)
@@ -408,7 +408,7 @@ If caveman save you mass token, mass money — leave mass star. ⭐
 
 ## Also by Julius Brussee
 
-- **[Cavekit](https://github.com/JuliusBrussee/cavekit)** — specification-driven development for Gemini CLI. Caveman language → specs → parallel builds → working software.
+- **[Cavekit](https://github.com/JuliusBrussee/cavekit)** — specification-driven development for Claude Code. Caveman language → specs → parallel builds → working software.
 - **[Revu](https://github.com/JuliusBrussee/revu-swift)** — local-first macOS study app with FSRS spaced repetition, decks, exams, and study guides. [revu.cards](https://revu.cards)
 
 ## License

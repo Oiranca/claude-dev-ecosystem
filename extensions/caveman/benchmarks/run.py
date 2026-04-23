@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark caveman vs normal Gemini CLI output token counts."""
+"""Benchmark caveman vs normal Claude Code output token counts."""
 
 import argparse
 import hashlib
@@ -237,7 +237,7 @@ def dry_run(prompts, model, trials):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Benchmark caveman vs normal Gemini CLI")
+    parser = argparse.ArgumentParser(description="Benchmark caveman vs normal Claude Code")
     parser.add_argument("--trials", type=int, default=3, help="Trials per prompt per mode (default: 3)")
     parser.add_argument("--dry-run", action="store_true", help="Print config, no API calls")
     parser.add_argument("--update-readme", action="store_true", help="Update README.md benchmark table")
