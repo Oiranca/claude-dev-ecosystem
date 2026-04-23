@@ -1,5 +1,5 @@
 #!/bin/bash
-# caveman — one-command hook installer for Gemini CLI
+# caveman — one-command hook installer for Claude Code
 # Installs: SessionStart hook (auto-load rules) + UserPromptSubmit hook (mode tracking)
 # Usage: bash hooks/install.sh
 #   or:  bash <(curl -s https://raw.githubusercontent.com/JuliusBrussee/caveman/main/hooks/install.sh)
@@ -190,7 +190,7 @@ CAVEMAN_SETTINGS="$SETTINGS" CAVEMAN_HOOKS_DIR="$HOOKS_DIR" node -e "
 "
 
 echo ""
-echo "Done! Restart Gemini CLI to activate."
+echo "Done! Restart Claude Code to activate."
 echo ""
 echo "What's installed:"
 echo "  - SessionStart hook: auto-loads caveman rules every session"

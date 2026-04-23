@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// caveman — Gemini CLI SessionStart activation hook (Claude Code uses scripts/caveman-init.sh)
+// caveman — Claude Code SessionStart activation hook (Claude Code uses scripts/caveman-init.sh)
 //
 // Runs on every session start:
 //   1. Writes flag file at $GEMINI_CONFIG_DIR/.caveman-active (statusline reads this)
@@ -110,7 +110,7 @@ if (skillContent) {
     'Code/commits/PRs: write normal. "stop caveman" or "normal mode": revert. Level persist until changed or session end.';
 }
 
-// 3. Detect missing statusline config — nudge Gemini CLI to help set it up
+// 3. Detect missing statusline config — nudge Claude Code to help set it up
 try {
   let hasStatusline = false;
   if (fs.existsSync(settingsPath)) {

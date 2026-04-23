@@ -1,4 +1,4 @@
-# caveman — one-command hook installer for Gemini CLI (Windows PowerShell)
+# caveman — one-command hook installer for Claude Code (Windows PowerShell)
 # Installs: SessionStart hook (auto-load rules) + UserPromptSubmit hook (mode tracking)
 # Usage: powershell -ExecutionPolicy Bypass -File hooks\install.ps1
 #   or:  powershell -ExecutionPolicy Bypass -File hooks\install.ps1 -Force
@@ -19,9 +19,9 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-$Gemini CLIDir = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $env:USERPROFILE ".claude" }
-$HooksDir = Join-Path $Gemini CLIDir "hooks"
-$Settings = Join-Path $Gemini CLIDir "settings.json"
+$claudeDir = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $env:USERPROFILE ".claude" }
+$HooksDir = Join-Path $claudeDir "hooks"
+$Settings = Join-Path $claudeDir "settings.json"
 $RepoUrl = "https://raw.githubusercontent.com/JuliusBrussee/caveman/main/hooks"
 
 $HookFiles = @("package.json", "caveman-config.js", "caveman-activate.js", "caveman-mode-tracker.js", "caveman-statusline.sh", "caveman-statusline.ps1")
@@ -183,7 +183,7 @@ console.log('  Hooks wired in settings.json');
 node -e $nodeScript
 
 Write-Host ""
-Write-Host "Done! Restart Gemini CLI to activate." -ForegroundColor Green
+Write-Host "Done! Restart Claude Code to activate." -ForegroundColor Green
 Write-Host ""
 Write-Host "What's installed:"
 Write-Host "  - SessionStart hook: auto-loads caveman rules every session"

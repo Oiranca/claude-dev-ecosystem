@@ -8,10 +8,10 @@ If you installed caveman standalone (without the plugin), you can use `bash hook
 
 ### `caveman-activate.js` — SessionStart hook
 
-- Runs once when Gemini CLI starts
+- Runs once when Claude Code starts
 - Writes `full` to `~/.claude/.caveman-active` (flag file)
 - Emits caveman rules as hidden SessionStart context
-- Detects missing statusline config and emits setup nudge (Gemini CLI will offer to help)
+- Detects missing statusline config and emits setup nudge (Claude Code will offer to help)
 
 ### `caveman-mode-tracker.js` — UserPromptSubmit hook
 
@@ -26,11 +26,11 @@ If you installed caveman standalone (without the plugin), you can use `bash hook
 
 ## Statusline Badge
 
-The statusline badge shows which caveman mode is active directly in your Gemini CLI status bar.
+The statusline badge shows which caveman mode is active directly in your Claude Code status bar.
 
-**Plugin users:** If you do not already have a `statusLine` configured, Gemini CLI will detect that on your first session after install and offer to set it up for you. Accept and you're done.
+**Plugin users:** If you do not already have a `statusLine` configured, Claude Code will detect that on your first session after install and offer to set it up for you. Accept and you're done.
 
-If you already have a custom statusline, caveman does not overwrite it and Gemini CLI stays quiet. Add the badge snippet to your existing script instead.
+If you already have a custom statusline, caveman does not overwrite it and Claude Code stays quiet. Add the badge snippet to your existing script instead.
 
 **Standalone users:** `install.sh` / `install.ps1` wires the statusline automatically if you do not already have a custom statusline. If you do, the installer leaves it alone and prints the merge note.
 
@@ -90,7 +90,7 @@ SessionStart hook ──writes "full"──▶ ~/.claude/.caveman-active ◀─�
                                     [CAVEMAN:ULTRA] │ ...
 ```
 
-SessionStart stdout is injected as hidden system context — Gemini CLI sees it, users don't. The statusline runs as a separate process. The flag file is the bridge.
+SessionStart stdout is injected as hidden system context — Claude Code sees it, users don't. The statusline runs as a separate process. The flag file is the bridge.
 
 ## Uninstall
 
