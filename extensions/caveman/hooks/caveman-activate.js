@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// caveman — Claude Code / Gemini CLI SessionStart activation hook
+// caveman — Gemini CLI SessionStart activation hook (Claude Code uses scripts/caveman-init.sh)
 //
 // Runs on every session start:
 //   1. Writes flag file at $GEMINI_CONFIG_DIR/.caveman-active (statusline reads this)

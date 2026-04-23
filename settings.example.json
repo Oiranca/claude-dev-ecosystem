@@ -23,7 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/extensions/caveman/hooks/caveman-activate.js",
+            "command": "bash ~/.claude/scripts/caveman-init.sh",
             "timeout": 5000
           }
         ]
