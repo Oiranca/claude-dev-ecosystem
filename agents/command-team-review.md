@@ -1,8 +1,16 @@
 ---
 name: command-team-review
 description: "Parallel multi-agent code review workflow. Coordinates Security, Performance, and QA review lanes and produces a structured final report."
-model: gemini-3-pro-preview
-tools: ["*"]
+model: sonnet
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Edit
+  - MultiEdit
+  - Write
+  - Bash
+  - Agent
 ---
 
 

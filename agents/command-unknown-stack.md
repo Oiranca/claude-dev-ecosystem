@@ -1,8 +1,16 @@
 ---
 name: command-unknown-stack
 description: "Cautious analysis workflow for an unclear technology stack. Requires human review before implementation proceeds."
-model: gemini-3-pro-preview
-tools: ["*"]
+model: sonnet
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Edit
+  - MultiEdit
+  - Write
+  - Bash
+  - Agent
 ---
 
 

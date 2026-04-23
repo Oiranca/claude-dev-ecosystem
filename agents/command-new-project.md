@@ -1,8 +1,16 @@
 ---
 name: command-new-project
 description: "Workflow for a new or bootstrapped project with few source files. Runs stack detection, inventory, architecture planning, initial implementation, and QA."
-model: gemini-3-pro-preview
-tools: ["*"]
+model: sonnet
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Edit
+  - MultiEdit
+  - Write
+  - Bash
+  - Agent
 ---
 
 

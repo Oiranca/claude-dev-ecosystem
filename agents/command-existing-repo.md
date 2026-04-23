@@ -1,8 +1,16 @@
 ---
 name: command-existing-repo
 description: "Full analysis and improvement workflow for an existing repository. Runs stack detection, inventory, dependency audit, architecture review, targeted improvements, and QA."
-model: gemini-3-pro-preview
-tools: ["*"]
+model: sonnet
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Edit
+  - MultiEdit
+  - Write
+  - Bash
+  - Agent
 ---
 
 

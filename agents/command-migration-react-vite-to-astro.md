@@ -1,8 +1,16 @@
 ---
 name: command-migration-react-vite-to-astro
 description: "Incremental migration workflow from React + Vite to Astro using islands architecture. Validates preconditions, inventories routes, plans architecture, migrates components in batches, and validates."
-model: gemini-3-pro-preview
-tools: ["*"]
+model: sonnet
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Edit
+  - MultiEdit
+  - Write
+  - Bash
+  - Agent
 ---
 
 

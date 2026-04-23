@@ -42,7 +42,7 @@ FAILED_STEP=""
 # Lógica de validación por pasos
 for step in lint typecheck test build; do
   # Comprobar si el script existe en package.json usando python3
-  HAS_STEP=$(python3 -c "import json; print('yes' if os.path.exists('package.json') and '$step' in json.load(open('package.json')).get('scripts', {}) else 'no')" 2>/dev/null || echo "no")
+  HAS_STEP=$(python3 -c "import json, os; print('yes' if os.path.exists('package.json') and '$step' in json.load(open('package.json')).get('scripts', {}) else 'no')" 2>/dev/null || echo "no")
   
   if [ "$HAS_STEP" = "yes" ]; then
     echo "[ROLE: QA] Running $step..." | tee -a "$VALIDATE_LOG"

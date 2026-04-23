@@ -1,8 +1,16 @@
 ---
 name: command-refactor-module
 description: "Safe, behavior-preserving refactor workflow for a specific module or file set. Includes planning, scoped implementation, and validation."
-model: gemini-3-pro-preview
-tools: ["*"]
+model: sonnet
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Edit
+  - MultiEdit
+  - Write
+  - Bash
+  - Agent
 ---
 
 

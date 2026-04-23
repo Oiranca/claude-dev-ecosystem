@@ -1,8 +1,16 @@
 ---
 name: command-security-audit
 description: "Focused security audit workflow. Prioritizes sensitive surfaces first, avoids reproducing secrets, and returns a remediation-oriented report."
-model: gemini-3-pro-preview
-tools: ["*"]
+model: sonnet
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Edit
+  - MultiEdit
+  - Write
+  - Bash
+  - Agent
 ---
 
 
