@@ -8,8 +8,19 @@ MODE="${CAVEMAN_DEFAULT_MODE:-ultra}"
 CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 SKILL_FILE="$CLAUDE_DIR/extensions/caveman/skills/caveman/SKILL.md"
 
-# Write flag for statusline
-echo "${MODE}" > "${CLAUDE_DIR}/.caveman-active"
+# Write flag for statusline — guard against symlinks and non-regular files
+_FLAG="${CLAUDE_DIR}/.caveman-active"
+if [ -e "$_FLAG" ] && [ ! -f "$_FLAG" ]; then
+    : # not a regular file — skip write
+elif [ -L "$_FLAG" ]; then
+    : # symlink — skip write
+else
+    # Atomic write: write to a tmpfile in the same directory, then rename
+    _TMP=$(mktemp "${CLAUDE_DIR}/.caveman-active.XXXXXX")
+    echo "${MODE}" > "$_TMP"
+    chmod 600 "$_TMP" 2>/dev/null || true
+    mv -f "$_TMP" "$_FLAG"
+fi
 
 echo "CAVEMAN MODE ACTIVE — level: ${MODE}"
 echo ""

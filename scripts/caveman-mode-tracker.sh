@@ -58,7 +58,18 @@ if [ -n "$MODE" ]; then
         rm -f "$FLAG"
     else
         if echo " $VALID_MODES " | grep -q " $MODE "; then
-            printf '%s' "$MODE" > "$FLAG" && chmod 600 "$FLAG" 2>/dev/null || true
+            # Guard: skip if FLAG is a symlink or any non-regular file
+            if [ -e "$FLAG" ] && [ ! -f "$FLAG" ]; then
+                : # not a regular file — skip write
+            elif [ -L "$FLAG" ]; then
+                : # symlink — skip write
+            else
+                # Atomic write: write to a tmpfile in the same directory, then rename
+                _TMP=$(mktemp "$(dirname "$FLAG")/.caveman-active.XXXXXX")
+                printf '%s' "$MODE" > "$_TMP"
+                chmod 600 "$_TMP" 2>/dev/null || true
+                mv -f "$_TMP" "$FLAG"
+            fi
         fi
     fi
 fi

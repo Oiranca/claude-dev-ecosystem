@@ -11,8 +11,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/scripts/caveman-init.sh\"",
-            "timeout": 5000,
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/caveman-activate.js\"",
+            "timeout": 5,
             "statusMessage": "Loading caveman mode..."
           }
         ]
@@ -23,8 +23,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/scripts/caveman-mode-tracker.sh\"",
-            "timeout": 5000,
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/caveman-mode-tracker.js\"",
+            "timeout": 5,
             "statusMessage": "Tracking caveman mode..."
           }
         ]

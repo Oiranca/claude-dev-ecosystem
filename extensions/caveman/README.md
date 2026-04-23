@@ -128,7 +128,6 @@ Pick your agent. One command. Done.
 |-------|---------|
 | **Claude Code** | `claude plugin marketplace add JuliusBrussee/caveman && claude plugin install caveman@caveman` |
 | **Claude Code** | Clone repo → `/plugins` → Search "Caveman" → Install |
-| **Claude Code** | `gemini extensions install https://github.com/JuliusBrussee/caveman` |
 | **Cursor** | `npx skills add JuliusBrussee/caveman -a cursor` |
 | **Windsurf** | `npx skills add JuliusBrussee/caveman -a windsurf` |
 | **Copilot** | `npx skills add JuliusBrussee/caveman -a github-copilot` |

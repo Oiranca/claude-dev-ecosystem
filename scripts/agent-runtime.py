@@ -144,13 +144,52 @@ def _write_json_locked(path: Path, data: Union[list, dict]):
 
 
 def _append_line_locked(path: Path, line: str):
-    """Append a line to a file with exclusive lock."""
+    """Append a line to a file with exclusive lock on the file itself.
+
+    Used for TIMELINE_FILE (no companion lock needed there).
+    """
     with open(path, "a") as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         try:
             f.write(line + "\n")
         finally:
             fcntl.flock(f, fcntl.LOCK_UN)
+
+
+def _read_lines_messages_locked() -> list:
+    """Read all lines from MESSAGES_FILE under companion EX lock."""
+    with open(_io_lock_path(MESSAGES_FILE), "a+") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            if not MESSAGES_FILE.exists():
+                return []
+            return MESSAGES_FILE.read_text().splitlines(keepends=True)
+        finally:
+            fcntl.flock(lf, fcntl.LOCK_UN)
+
+
+def _write_lines_messages_locked(lines: list):
+    """Rewrite MESSAGES_FILE from a list of lines under companion EX lock."""
+    tmp = MESSAGES_FILE.with_name(MESSAGES_FILE.name + f".{uuid.uuid4().hex[:8]}.tmp")
+    with open(_io_lock_path(MESSAGES_FILE), "a+") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            with open(tmp, "w") as f:
+                f.writelines(lines)
+            tmp.replace(MESSAGES_FILE)
+        finally:
+            fcntl.flock(lf, fcntl.LOCK_UN)
+
+
+def _append_line_messages_locked(line: str):
+    """Append a line to MESSAGES_FILE under companion EX lock."""
+    with open(_io_lock_path(MESSAGES_FILE), "a+") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            with open(MESSAGES_FILE, "a") as f:
+                f.write(line + "\n")
+        finally:
+            fcntl.flock(lf, fcntl.LOCK_UN)
 
 
 # ---------------------------------------------------------------------------
@@ -281,7 +320,7 @@ def message_send(args):
         "read": False,
         "created_at": now_iso(),
     }
-    _append_line_locked(MESSAGES_FILE, json.dumps(msg))
+    _append_line_messages_locked(json.dumps(msg))
     _timeline_write(
         f"message.sent id={msg['id']} from={msg['from']} to={msg['to']} type={msg['type']}"
     )
@@ -293,7 +332,8 @@ def message_inbox(args):
         print("[]")
         return
 
-    raw_lines = MESSAGES_FILE.read_text().splitlines(keepends=True)
+    # Read all lines under companion lock so no concurrent writer races us.
+    raw_lines = _read_lines_messages_locked()
     msgs = []
     updated_lines = []
     dirty = False
@@ -323,14 +363,8 @@ def message_inbox(args):
             continue
 
     if dirty:
-        # Rewrite file with read messages marked — use companion lock for safety
-        with open(_io_lock_path(MESSAGES_FILE), "a+") as lf:
-            fcntl.flock(lf, fcntl.LOCK_EX)
-            try:
-                with open(MESSAGES_FILE, "w") as f:
-                    f.writelines(updated_lines)
-            finally:
-                fcntl.flock(lf, fcntl.LOCK_UN)
+        # Rewrite file with read messages marked — all under companion lock.
+        _write_lines_messages_locked(updated_lines)
 
     print(json.dumps(msgs, indent=2))
 
@@ -341,7 +375,8 @@ def message_mark_read(args):
         print("No messages file found.")
         return
 
-    raw_lines = MESSAGES_FILE.read_text().splitlines(keepends=True)
+    # Read under companion lock so the read-then-write is consistent.
+    raw_lines = _read_lines_messages_locked()
     updated_lines = []
     count = 0
 
@@ -361,12 +396,8 @@ def message_mark_read(args):
         except json.JSONDecodeError:
             updated_lines.append(line)
 
-    with open(MESSAGES_FILE, "w") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        try:
-            f.writelines(updated_lines)
-        finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
+    # Rewrite atomically under companion lock.
+    _write_lines_messages_locked(updated_lines)
 
     print(f"Marked {count} message(s) as read for agent '{args.agent}'.")
 
