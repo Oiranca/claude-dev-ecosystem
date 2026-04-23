@@ -1,12 +1,12 @@
 # Usage Guide
 
-This guide describes how to use the normalized Copilot CLI setup.
+This guide describes how to use the Claude Code ecosystem.
 
 ---
 
 ## How to Work
 
-Use Copilot CLI directly from the terminal.
+Use Claude Code directly from the terminal.
 
 The typical interaction pattern is:
 

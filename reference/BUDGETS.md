@@ -1,6 +1,6 @@
 # Skill Budget Rules
 
-This file defines the lightweight operational budgeting used by the normalized Copilot CLI workflow.
+This file defines the lightweight operational budgeting used by the Claude Code ecosystem.
 
 Budgeting exists to prevent repeated expensive analysis while keeping agent cycles responsive and predictable.
 
