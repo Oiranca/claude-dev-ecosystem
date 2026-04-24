@@ -21,7 +21,7 @@ if [ -d "$CLAUDE_DIR/plugins" ]; then
 fi
 
 if [ "$PLUGIN_INSTALLED" -eq 1 ]; then
-  echo "Caveman appears to be installed as a Gemini CLI plugin."
+  echo "Caveman appears to be installed as a Claude Code plugin."
   echo "To uninstall the plugin, run:"
   echo ""
   echo "  claude plugin disable caveman"
@@ -120,11 +120,10 @@ if [ -f "$FLAG_FILE" ]; then
 fi
 
 echo ""
-echo "Done! Restart Gemini CLI to complete the uninstall."
+echo "Done! Restart Claude Code to complete the uninstall."
 
 # Guidance for other agents
 echo ""
 echo "Other agents:"
 echo "  npx skills remove caveman    # Cursor, Windsurf, Cline, Copilot, etc."
-echo "  claude plugin disable caveman  # Gemini CLI plugin"
-echo "  gemini extensions uninstall caveman  # Gemini CLI"
+echo "  claude plugin disable caveman  # Claude Code plugin"

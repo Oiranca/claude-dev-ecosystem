@@ -10,9 +10,9 @@
 
 ---
 
-A Gemini CLI skill that compresses your project memory files (`CLAUDE.md`, todos, preferences) into caveman format — so every session loads fewer tokens automatically.
+A Claude Code skill that compresses your project memory files (`CLAUDE.md`, todos, preferences) into caveman format — so every session loads fewer tokens automatically.
 
-Gemini CLI read `CLAUDE.md` on every session start. If file big, cost big. Caveman make file small. Cost go down forever.
+Claude Code read `CLAUDE.md` on every session start. If file big, cost big. Caveman make file small. Cost go down forever.
 
 ## What It Do
 
@@ -21,7 +21,7 @@ Gemini CLI read `CLAUDE.md` on every session start. If file big, cost big. Cavem
 ```
 
 ```
-CLAUDE.md          ← compressed (Gemini CLI reads this — fewer tokens every session)
+CLAUDE.md          ← compressed (Claude Code reads this — fewer tokens every session)
 CLAUDE.original.md ← human-readable backup (you edit this)
 ```
 
@@ -110,12 +110,12 @@ Examples:
         ↓
 detect file type        (no tokens)
         ↓
-Gemini CLI compresses       (tokens — one call)
+Claude Code compresses       (tokens — one call)
         ↓
 validate output         (no tokens)
   checks: headings, code blocks, URLs, file paths, bullets
         ↓
-if errors: Gemini CLI fixes cherry-picked issues only   (tokens — targeted fix)
+if errors: Claude Code fixes cherry-picked issues only   (tokens — targeted fix)
   does NOT recompress — only patches broken parts
         ↓
 retry up to 2 times
@@ -157,7 +157,7 @@ Caveman cut that by ~46% on average. Same instructions. Same accuracy. Less wast
 
 ## Part of Caveman
 
-This skill is part of the [caveman](https://github.com/JuliusBrussee/caveman) toolkit — making Gemini CLI use fewer tokens without losing accuracy.
+This skill is part of the [caveman](https://github.com/JuliusBrussee/caveman) toolkit — making Claude Code use fewer tokens without losing accuracy.
 
-- **caveman** — make Gemini CLI *speak* like caveman (cuts response tokens ~65%)
-- **caveman-compress** — make Gemini CLI *read* less (cuts context tokens ~46%)
+- **caveman** — make Claude Code *speak* like caveman (cuts response tokens ~65%)
+- **caveman-compress** — make Claude Code *read* less (cuts context tokens ~46%)

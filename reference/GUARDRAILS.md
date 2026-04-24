@@ -16,7 +16,7 @@ Operational budgeting rules are in `reference/BUDGETS.md`.
 - High-cost validation should not repeat in the same cycle unless the repository fingerprint changes.
 - Never modify unrelated files.
 - Never expand scope beyond the active milestone.
-- Check artifact freshness in `.agent-cache/artifact_freshness.json` before regenerating owned artifacts.
+- If `.agent-cache/artifact_freshness.json` exists, check artifact freshness before regenerating owned artifacts.
 - Respect active lock files under `.agent-cache/locks/` when present.
 
 ---
@@ -33,6 +33,8 @@ Repository knowledge artifacts are owned by specific agents.
 | docs/QA_REPORT.md | qa-engineer |
 | docs/SECURITY_REPORT.md | security-reviewer |
 | README / CHANGELOG | tech-writer |
+| docs/TASKS.md | product-manager |
+| docs/REVIEWS.md | qa-engineer, security-reviewer |
 
 Ownership defines responsibility for generating or updating the artifact.
 Other agents may read these files but should avoid rewriting them.

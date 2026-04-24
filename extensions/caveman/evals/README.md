@@ -1,7 +1,7 @@
 # Evals
 
 Measures real token compression of caveman skills by running the same
-prompts through Gemini CLI under three conditions and comparing the
+prompts through Claude Code under three conditions and comparing the
 generated output token counts.
 
 ## The three arms
@@ -21,7 +21,7 @@ this harness did and is why its numbers were inflated.
 ## Why this design
 
 - **Real LLM output**, not hand-written examples (no circularity).
-- **Same Gemini CLI** the skills target — no separate API key.
+- **Same Claude Code** the skills target — no separate API key.
 - **Snapshot committed to git** so CI runs are deterministic and free,
   and so any change to the numbers is reviewable as a diff.
 - **Control arm** isolates the skill's contribution from the generic
@@ -45,7 +45,7 @@ this harness did and is why its numbers were inflated.
 uv run python evals/llm_run.py
 ```
 
-This calls Gemini CLI once per prompt × (N skills + 2 control arms). Use
+This calls Claude Code once per prompt × (N skills + 2 control arms). Use
 a small model to keep it cheap:
 
 ```bash
@@ -76,8 +76,8 @@ picks up every skill directory automatically.
   on every call, so output savings are not the full economic picture.
 - **Cross-model behavior** — only the model used to generate the
   snapshot is measured.
-- **Exact Gemini CLI tokens** — `tiktoken o200k_base` is OpenAI's BPE and is
-  only an approximation of Gemini CLI's tokenizer. Ratios between arms are
+- **Exact Claude Code tokens** — `tiktoken o200k_base` is OpenAI's BPE and is
+  only an approximation of Claude Code's tokenizer. Ratios between arms are
   meaningful; absolute numbers are approximate.
 - **Statistical significance** — single run per (prompt, arm) at default
   temperature. The min/max/stdev columns let you eyeball whether a

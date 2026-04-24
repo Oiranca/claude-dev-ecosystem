@@ -30,13 +30,13 @@ Keep work local if scope is still unclear, edits would overlap, or one answer de
 1. Decompose each lane into: goal, owner, allowed files, forbidden files, validation, dependency.
 2. If two lanes need the same file, merge them into one lane or keep that work local.
 3. Pick the narrowest role that fits:
-   - discovery: `context-manager` or `explorer`
-   - implementation: `software-engineer` or `worker`
+   - discovery: `context-manager` or `repo-analyzer`
+   - implementation: `software-engineer` or `migration-engineer`
    - review: `qa-engineer`, `security-reviewer`
    - infra: `devops-engineer`
    - migration: `migration-engineer`
 4. Spawn implementation or discovery lanes in parallel only when the main thread can keep moving.
-5. Use `interact` only for scope changes or new blockers. Use `wait_agent` only when the next step truly depends on a result.
+5. Use `SendMessage` only for scope changes or new blockers directed at a running subagent. Wait for the subagent to return before proceeding when the next step truly depends on the result.
 6. Review returned edits, check for overlap, run minimum combined validation, then pass through `completion-gate` before claiming success.
 
 ## Prompt Shape

@@ -144,13 +144,40 @@ def _write_json_locked(path: Path, data: Union[list, dict]):
 
 
 def _append_line_locked(path: Path, line: str):
-    """Append a line to a file with exclusive lock."""
+    """Append a line to a file with exclusive lock on the file itself.
+
+    Used for TIMELINE_FILE (no companion lock needed there).
+    """
     with open(path, "a") as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         try:
             f.write(line + "\n")
         finally:
             fcntl.flock(f, fcntl.LOCK_UN)
+
+
+def _append_line_messages_locked(line: str):
+    """Append a line to MESSAGES_FILE under companion EX lock."""
+    with open(_io_lock_path(MESSAGES_FILE), "a+") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            with open(MESSAGES_FILE, "a") as f:
+                f.write(line + "\n")
+        finally:
+            fcntl.flock(lf, fcntl.LOCK_UN)
+
+
+def _update_messages_locked(update_fn):
+    """Run a read/modify/write cycle for MESSAGES_FILE under one EX lock."""
+    with open(_io_lock_path(MESSAGES_FILE), "a+") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            lines = []
+            if MESSAGES_FILE.exists():
+                lines = MESSAGES_FILE.read_text().splitlines(keepends=True)
+            return update_fn(lines)
+        finally:
+            fcntl.flock(lf, fcntl.LOCK_UN)
 
 
 # ---------------------------------------------------------------------------
@@ -281,7 +308,7 @@ def message_send(args):
         "read": False,
         "created_at": now_iso(),
     }
-    _append_line_locked(MESSAGES_FILE, json.dumps(msg))
+    _append_line_messages_locked(json.dumps(msg))
     _timeline_write(
         f"message.sent id={msg['id']} from={msg['from']} to={msg['to']} type={msg['type']}"
     )
@@ -293,44 +320,42 @@ def message_inbox(args):
         print("[]")
         return
 
-    raw_lines = MESSAGES_FILE.read_text().splitlines(keepends=True)
-    msgs = []
-    updated_lines = []
-    dirty = False
+    def _collect(lines: list):
+        msgs = []
+        updated_lines = []
+        dirty = False
 
-    for line in raw_lines:
-        stripped = line.strip()
-        if not stripped:
-            updated_lines.append(line)
-            continue
-        try:
-            m = json.loads(stripped)
-            if m.get("to") == args.agent:
-                if args.unread and m.get("read"):
-                    updated_lines.append(line)
-                    continue
-                msgs.append(m)
-                if args.unread and not m.get("read"):
-                    m["read"] = True
-                    updated_lines.append(json.dumps(m) + "\n")
-                    dirty = True
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                updated_lines.append(line)
+                continue
+            try:
+                m = json.loads(stripped)
+                if m.get("to") == args.agent:
+                    if args.unread and m.get("read"):
+                        updated_lines.append(line)
+                        continue
+                    msgs.append(m)
+                    if args.unread and not m.get("read"):
+                        m["read"] = True
+                        updated_lines.append(json.dumps(m) + "\n")
+                        dirty = True
+                    else:
+                        updated_lines.append(line)
                 else:
                     updated_lines.append(line)
-            else:
+            except json.JSONDecodeError:
                 updated_lines.append(line)
-        except json.JSONDecodeError:
-            updated_lines.append(line)
-            continue
 
-    if dirty:
-        # Rewrite file with read messages marked — use exclusive lock for safety
-        with open(MESSAGES_FILE, "w") as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
-            try:
+        if dirty:
+            tmp = MESSAGES_FILE.with_name(MESSAGES_FILE.name + f".{uuid.uuid4().hex[:8]}.tmp")
+            with open(tmp, "w") as f:
                 f.writelines(updated_lines)
-            finally:
-                fcntl.flock(f, fcntl.LOCK_UN)
+            tmp.replace(MESSAGES_FILE)
 
+        return msgs
+    msgs = _update_messages_locked(_collect)
     print(json.dumps(msgs, indent=2))
 
 
@@ -340,33 +365,33 @@ def message_mark_read(args):
         print("No messages file found.")
         return
 
-    raw_lines = MESSAGES_FILE.read_text().splitlines(keepends=True)
-    updated_lines = []
-    count = 0
+    def _mark(lines: list):
+        updated_lines = []
+        count = 0
 
-    for line in raw_lines:
-        stripped = line.strip()
-        if not stripped:
-            updated_lines.append(line)
-            continue
-        try:
-            m = json.loads(stripped)
-            if m.get("to") == args.agent and not m.get("read"):
-                m["read"] = True
-                updated_lines.append(json.dumps(m) + "\n")
-                count += 1
-            else:
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
                 updated_lines.append(line)
-        except json.JSONDecodeError:
-            updated_lines.append(line)
+                continue
+            try:
+                m = json.loads(stripped)
+                if m.get("to") == args.agent and not m.get("read"):
+                    m["read"] = True
+                    updated_lines.append(json.dumps(m) + "\n")
+                    count += 1
+                else:
+                    updated_lines.append(line)
+            except json.JSONDecodeError:
+                updated_lines.append(line)
 
-    with open(MESSAGES_FILE, "w") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        try:
+        tmp = MESSAGES_FILE.with_name(MESSAGES_FILE.name + f".{uuid.uuid4().hex[:8]}.tmp")
+        with open(tmp, "w") as f:
             f.writelines(updated_lines)
-        finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
+        tmp.replace(MESSAGES_FILE)
+        return count
 
+    count = _update_messages_locked(_mark)
     print(f"Marked {count} message(s) as read for agent '{args.agent}'.")
 
 

@@ -1,25 +1,17 @@
 ---
 name: command-existing-repo
 description: "Full analysis and improvement workflow for an existing repository. Runs stack detection, inventory, dependency audit, architecture review, targeted improvements, and QA."
-model: gemini-3-pro-preview
-tools: ["*"]
+model: sonnet
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Edit
+  - MultiEdit
+  - Write
+  - Bash
+  - Agent
 ---
-
-
-## Gemini CLI Native Note
-
-- This skill runs natively in Gemini CLI.
-- Any references to `local metadata cache` in this document are optional local metadata hints, not required control-plane dependencies.
-
-# Command `existing-repo`
-
-## Gemini CLI Native Orchestration (v2)
-
-1. Drive orchestration from the current Gemini CLI thread.
-2. Split work into independent lanes and run them with `delegate` when parallelism helps.
-3. Use `interact` to refine or redirect delegated lanes.
-4. Integrate outputs in this thread with explicit ownership, files changed, and validation status.
-5. Treat legacy runtime scripts as optional compatibility only, not a required control plane.
 
 # /existing-repo
 
@@ -38,7 +30,7 @@ Assign to **stack-analyzer**:
 - Output `docs/STACK_PROFILE.md`.
 
 ### Milestone 2 — Full Inventory & Audit Swarm
-Spawn in parallel via **current Gemini CLI thread**:
+Spawn in parallel via the **Agent tool**:
 1. **repo-analyzer**: Run repo-inventory and route-mapper. Output `docs/INVENTORY.md`.
 2. **security-reviewer**: Run dependency-audit. Output `docs/SECURITY_REPORT.md`.
 

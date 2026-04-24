@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// caveman — Gemini CLI SessionStart activation hook
+// caveman — Claude Code SessionStart activation hook (Claude Code uses scripts/caveman-init.sh)
 //
 // Runs on every session start:
-//   1. Writes flag file at $GEMINI_CONFIG_DIR/.caveman-active (statusline reads this)
+//   1. Writes flag file at $CLAUDE_CONFIG_DIR/.caveman-active (statusline reads this)
 //   2. Emits caveman ruleset as hidden SessionStart context
 //   3. Detects missing statusline config and emits setup nudge
 
@@ -11,9 +11,9 @@ const path = require('path');
 const os = require('os');
 const { getDefaultMode, safeWriteFlag } = require('./caveman-config');
 
-const geminiDir = process.env.GEMINI_CONFIG_DIR || path.join(os.homedir(), '.gemini');
-const flagPath = path.join(geminiDir, '.caveman-active');
-const settingsPath = path.join(geminiDir, 'settings.json');
+const claudeDir = process.env.CLAUDE_CONFIG_DIR || process.env.GEMINI_CONFIG_DIR || path.join(os.homedir(), '.claude');
+const flagPath = path.join(claudeDir, '.caveman-active');
+const settingsPath = path.join(claudeDir, 'settings.json');
 
 const mode = getDefaultMode();
 
@@ -49,7 +49,7 @@ const modeLabel = mode === 'wenyan' ? 'wenyan-full' : mode;
 
 // Read SKILL.md — the single source of truth for caveman behavior.
 // Plugin installs: __dirname = <plugin_root>/hooks/, SKILL.md at <plugin_root>/skills/caveman/SKILL.md
-// Standalone installs: __dirname = $GEMINI_CONFIG_DIR/hooks/, SKILL.md won't exist — falls back to hardcoded rules.
+// Standalone installs: __dirname = $CLAUDE_CONFIG_DIR/hooks/, SKILL.md won't exist — falls back to hardcoded rules.
 let skillContent = '';
 try {
   skillContent = fs.readFileSync(
@@ -110,7 +110,7 @@ if (skillContent) {
     'Code/commits/PRs: write normal. "stop caveman" or "normal mode": revert. Level persist until changed or session end.';
 }
 
-// 3. Detect missing statusline config — nudge Gemini CLI to help set it up
+// 3. Detect missing statusline config — nudge Claude Code to help set it up
 try {
   let hasStatusline = false;
   if (fs.existsSync(settingsPath)) {
@@ -132,7 +132,7 @@ try {
     output += "\n\n" +
       "STATUSLINE SETUP NEEDED: The caveman plugin includes a statusline badge showing active mode " +
       "(e.g. [CAVEMAN], [CAVEMAN:ULTRA]). It is not configured yet. " +
-      "To enable, add this to " + path.join(geminiDir, 'settings.json') + ": " +
+      "To enable, add this to " + path.join(claudeDir, 'settings.json') + ": " +
       statusLineSnippet + " " +
       "Proactively offer to set this up for the user on first interaction.";
   }

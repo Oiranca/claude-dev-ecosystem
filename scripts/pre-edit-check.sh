@@ -2,7 +2,7 @@
 # Ubicación recomendada: ~/.claude/scripts/pre-edit-check.sh
 set -euo pipefail
 
-FILE="${1:-}"
+FILE="${1:-${CLAUDE_TOOL_INPUT_FILE_PATH:-}}"
 if [[ -z "$FILE" ]]; then
   exit 0
 fi

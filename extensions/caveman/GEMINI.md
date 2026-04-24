@@ -19,7 +19,7 @@ README = product front door. Non-technical people read it to decide if caveman w
 
 ## Project overview
 
-Caveman makes AI coding agents respond in compressed caveman-style prose — cuts ~65-75% output tokens, full technical accuracy. Ships as Gemini CLI plugin, Gemini CLI plugin, Gemini CLI extension, agent rule files for Cursor, Windsurf, Cline, Copilot, 40+ others via `npx skills`.
+Caveman makes AI coding agents respond in compressed caveman-style prose — cuts ~65-75% output tokens, full technical accuracy. Ships as Claude Code plugin, Claude Code extension, agent rule files for Cursor, Windsurf, Cline, Copilot, 40+ others via `npx skills`.
 
 ---
 
@@ -68,7 +68,7 @@ CI bot commits as `github-actions[bot]`. After PR merge, wait for workflow befor
 
 ---
 
-## Hook system (Gemini CLI)
+## Hook system (Claude Code)
 
 Three hooks in `hooks/` plus a `caveman-config.js` shared module and a `package.json` CommonJS marker. Communicate via flag file at `$CLAUDE_CONFIG_DIR/.caveman-active` (falls back to `~/.claude/.caveman-active`).
 
@@ -83,7 +83,7 @@ SessionStart hook ──writes "full"──▶ $CLAUDE_CONFIG_DIR/.caveman-activ
 
 `hooks/package.json` pins the directory to `{"type": "commonjs"}` so the `.js` hooks resolve as CJS even when an ancestor `package.json` (e.g. `~/.claude/package.json` from another plugin) declares `"type": "module"`. Without this, `require()` blows up with `ReferenceError: require is not defined in ES module scope`.
 
-All hooks honor `CLAUDE_CONFIG_DIR` for non-default Gemini CLI config locations.
+All hooks honor `CLAUDE_CONFIG_DIR` for non-default Claude Code config locations.
 
 ### `hooks/caveman-config.js` — shared module
 
@@ -93,9 +93,9 @@ Exports:
 
 ### `hooks/caveman-activate.js` — SessionStart hook
 
-Runs once per Gemini CLI session start. Three things:
+Runs once per Claude Code session start. Three things:
 1. Writes the active mode to `$CLAUDE_CONFIG_DIR/.caveman-active` via `safeWriteFlag` (creates if missing)
-2. Emits caveman ruleset as hidden stdout — Gemini CLI injects SessionStart hook stdout as system context, invisible to user
+2. Emits caveman ruleset as hidden stdout — Claude Code injects SessionStart hook stdout as system context, invisible to user
 3. Checks `settings.json` for statusline config; if missing, appends nudge to offer setup on first interaction
 
 Silent-fails on all filesystem errors — never blocks session start.
@@ -121,7 +121,7 @@ Reads JSON from stdin. Three responsibilities:
 
 ### `hooks/caveman-statusline.sh` — Statusline badge
 
-Reads flag file at `$CLAUDE_CONFIG_DIR/.caveman-active`. Outputs colored badge string for Gemini CLI statusline:
+Reads flag file at `$CLAUDE_CONFIG_DIR/.caveman-active`. Outputs colored badge string for Claude Code statusline:
 - `full` or empty → `[CAVEMAN]` (orange)
 - anything else → `[CAVEMAN:<MODE_UPPERCASED>]` (orange)
 
@@ -139,7 +139,7 @@ Configured in `settings.json` under `statusLine.command`. PowerShell counterpart
 
 ## Skill system
 
-Skills = Markdown files with YAML frontmatter consumed by Gemini CLI's skill/plugin system and by `npx skills` for other agents.
+Skills = Markdown files with YAML frontmatter consumed by Claude Code's skill/plugin system and by `npx skills` for other agents.
 
 ### Intensity levels
 
@@ -165,9 +165,9 @@ How caveman reaches each agent type:
 
 | Agent | Mechanism | Auto-activates? |
 |-------|-----------|----------------|
-| Gemini CLI | Plugin (hooks + skills) or standalone hooks | Yes — SessionStart hook injects rules |
-| Gemini CLI | Plugin in `plugins/caveman/` plus repo `.codex/hooks.json` and `.codex/config.toml` | Yes on macOS/Linux — SessionStart hook |
-| Gemini CLI | Extension with `GEMINI.md` context file | Yes — context file loads every session |
+| Claude Code | Plugin (hooks + skills) or standalone hooks | Yes — SessionStart hook injects rules |
+| Claude Code | Plugin in `plugins/caveman/` plus repo `.codex/hooks.json` and `.codex/config.toml` | Yes on macOS/Linux — SessionStart hook |
+| Claude Code | Extension with `GEMINI.md` context file | Yes — context file loads every session |
 | Cursor | `.cursor/rules/caveman.mdc` with `alwaysApply: true` | Yes — always-on rule |
 | Windsurf | `.windsurf/rules/caveman.md` with `trigger: always_on` | Yes — always-on rule |
 | Cline | `.clinerules/caveman.md` (auto-discovered) | Yes — Cline injects all .clinerules files |
@@ -187,7 +187,7 @@ For agents without hook systems, minimal always-on snippet lives in README under
 
 Honest delta = **skill vs terse**, not skill vs baseline. Baseline comparison conflates skill with generic terseness — that cheating. Harness designed to prevent this.
 
-`llm_run.py` calls `claude -p --system-prompt ...` per (prompt, arm), saves to `evals/snapshots/results.json`. `measure.py` reads snapshot offline with tiktoken (OpenAI BPE — approximates Gemini CLI tokenizer, ratios meaningful, absolute numbers approximate).
+`llm_run.py` calls `claude -p --system-prompt ...` per (prompt, arm), saves to `evals/snapshots/results.json`. `measure.py` reads snapshot offline with tiktoken (OpenAI BPE — approximates Claude Code tokenizer, ratios meaningful, absolute numbers approximate).
 
 Add skill: drop `skills/<name>/SKILL.md`. Harness auto-discovers. Add prompt: append line to `evals/prompts/en.txt`.
 
@@ -197,7 +197,7 @@ Snapshots committed to git. CI reads without API calls. Only regenerate when SKI
 
 ## Benchmarks
 
-`benchmarks/` runs real prompts through Gemini CLI API (not Gemini CLI CLI), records raw token counts. Results committed as JSON in `benchmarks/results/`. Benchmark table in README generated from results — update when regenerating.
+`benchmarks/` runs real prompts through Claude Code API (not Claude Code CLI), records raw token counts. Results committed as JSON in `benchmarks/results/`. Benchmark table in README generated from results — update when regenerating.
 
 To reproduce: `uv run python benchmarks/run.py` (needs `ANTHROPIC_API_KEY` in `.env.local`).
 

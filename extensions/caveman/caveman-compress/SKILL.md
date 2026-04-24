@@ -27,9 +27,9 @@ cd caveman-compress && python3 -m scripts <absolute_filepath>
 
 3. The CLI will:
 - detect file type (no tokens)
-- call Gemini CLI to compress
+- call Claude to compress
 - validate output (no tokens)
-- if errors: cherry-pick fix with Gemini CLI (targeted fixes only, no recompression)
+- if errors: cherry-pick fix with Claude (targeted fixes only, no recompression)
 - retry up to 2 times
 - if still failing after 2 retries: report error to user, leave original file untouched
 

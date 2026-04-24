@@ -18,8 +18,7 @@ Want:  [what caveman should say]
 ```
 
 **Platform**
-- [ ] Gemini CLI
-- [ ] Gemini CLI
+- [ ] Claude Code
 - [ ] Other: ___
 
 **Version / install method**

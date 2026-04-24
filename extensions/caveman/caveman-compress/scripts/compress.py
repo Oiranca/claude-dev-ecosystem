@@ -69,7 +69,7 @@ from .validate import validate
 MAX_RETRIES = 2
 
 
-# ---------- Gemini CLI Calls ----------
+# ---------- Claude API Calls ----------
 
 
 def call_claude(prompt: str) -> str:
@@ -98,7 +98,7 @@ def call_claude(prompt: str) -> str:
         )
         return strip_llm_wrapper(result.stdout.strip())
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Gemini CLI call failed:\n{e.stderr}")
+        raise RuntimeError(f"Claude call failed:\n{e.stderr}")
 
 
 def build_compress_prompt(original: str) -> str:
@@ -190,7 +190,7 @@ def compress_file(filepath: Path) -> bool:
         return False
 
     # Step 1: Compress
-    print("Compressing with Gemini CLI...")
+    print("Compressing with Claude...")
     compressed = call_claude(build_compress_prompt(original_text))
 
     # Save original as backup, write compressed to original path
@@ -218,7 +218,7 @@ def compress_file(filepath: Path) -> bool:
             print("❌ Failed after retries — original restored")
             return False
 
-        print("Fixing with Gemini CLI...")
+        print("Fixing with Claude...")
         compressed = call_claude(
             build_fix_prompt(original_text, compressed, result.errors)
         )

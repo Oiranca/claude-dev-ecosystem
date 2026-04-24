@@ -20,7 +20,7 @@
 
 ### Auth behavior
 
-If `ANTHROPIC_API_KEY` is set, the skill uses the Anthropic Python SDK directly (no subprocess). If not set, it falls back to the `claude` CLI, which uses the user's existing Gemini CLI desktop authentication.
+If `ANTHROPIC_API_KEY` is set, the skill uses the Anthropic Python SDK directly (no subprocess). If not set, it falls back to the `claude` CLI, which uses the user's existing Claude Code desktop authentication.
 
 ### File size limit
 

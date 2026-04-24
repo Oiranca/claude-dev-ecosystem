@@ -207,8 +207,6 @@ Installed once. Applies to all repositories.
 ├── agents/                 # Agent role definitions
 ├── skills/                 # Reusable capability definitions
 ├── commands/               # Workflow orchestrations
-├── hooks/
-│   └── hooks.json          # PreToolUse safety gates
 ├── scripts/
 │   ├── pre-edit-check.sh   # Edit safety gate
 │   ├── validate-local.sh   # Validation runner
@@ -216,6 +214,7 @@ Installed once. Applies to all repositories.
 ├── templates/
 │   └── local-scaffold/     # Optional repo bootstrap
 ├── reference/              # System documentation
+├── settings.json           # Claude Code settings (PreToolUse, SessionStart, Stop hooks)
 └── CLAUDE.md               # Global operating rules
 ```
 

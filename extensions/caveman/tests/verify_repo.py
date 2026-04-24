@@ -196,7 +196,7 @@ def verify_compress_cli() -> None:
 
 
 def verify_hook_install_flow() -> None:
-    section("Gemini CLI Hook Flow")
+    section("Claude Code Hook Flow")
 
     ensure(shutil.which("node") is not None, "node is required for hook verification")
     ensure(shutil.which("bash") is not None, "bash is required for hook verification")
@@ -314,7 +314,7 @@ def verify_hook_install_flow() -> None:
         run(["bash", "hooks/uninstall.sh"], env={"HOME": str(home)})
         ensure(read_json(claude_dir / "settings.json") == {}, "fresh uninstall should leave empty settings")
 
-    print("Gemini CLI hook install/uninstall flow OK")
+    print("Claude Code hook install/uninstall flow OK")
 
 
 def main() -> int:

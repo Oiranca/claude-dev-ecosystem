@@ -6,16 +6,16 @@ param()
 
 $ErrorActionPreference = "Stop"
 
-$Gemini CLIDir = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $env:USERPROFILE ".claude" }
-$HooksDir = Join-Path $Gemini CLIDir "hooks"
-$Settings = Join-Path $Gemini CLIDir "settings.json"
-$FlagFile = Join-Path $Gemini CLIDir ".caveman-active"
+$claudeDir = if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $env:USERPROFILE ".claude" }
+$HooksDir = Join-Path $claudeDir "hooks"
+$Settings = Join-Path $claudeDir "settings.json"
+$FlagFile = Join-Path $claudeDir ".caveman-active"
 
 $HookFiles = @("package.json", "caveman-config.js", "caveman-activate.js", "caveman-mode-tracker.js", "caveman-statusline.sh", "caveman-statusline.ps1")
 
 # Detect if caveman is installed as a plugin
 $PluginInstalled = $false
-$PluginsDir = Join-Path $Gemini CLIDir "plugins"
+$PluginsDir = Join-Path $claudeDir "plugins"
 if (Test-Path $PluginsDir) {
     $found = Get-ChildItem -Path $PluginsDir -Recurse -Filter "plugin.json" -ErrorAction SilentlyContinue |
         Where-Object { $_.FullName -match "caveman" }
@@ -23,7 +23,7 @@ if (Test-Path $PluginsDir) {
 }
 
 if ($PluginInstalled) {
-    Write-Host "Caveman appears to be installed as a Gemini CLI plugin." -ForegroundColor Yellow
+    Write-Host "Caveman appears to be installed as a Claude Code plugin." -ForegroundColor Yellow
     Write-Host "To uninstall the plugin, run:"
     Write-Host ""
     Write-Host "  claude plugin disable caveman" -ForegroundColor Cyan
@@ -125,11 +125,10 @@ if (Test-Path $FlagFile) {
 }
 
 Write-Host ""
-Write-Host "Done! Restart Gemini CLI to complete the uninstall." -ForegroundColor Green
+Write-Host "Done! Restart Claude Code to complete the uninstall." -ForegroundColor Green
 
 # Guidance for other agents
 Write-Host ""
 Write-Host "Other agents:"
 Write-Host "  npx skills remove caveman      # Cursor, Windsurf, Cline, Copilot, etc."
-Write-Host "  claude plugin disable caveman   # Gemini CLI plugin"
-Write-Host "  gemini extensions uninstall caveman  # Gemini CLI"
+Write-Host "  claude plugin disable caveman   # Claude Code plugin"

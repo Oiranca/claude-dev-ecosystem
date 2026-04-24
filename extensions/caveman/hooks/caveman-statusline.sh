@@ -1,11 +1,11 @@
 #!/bin/bash
-# caveman — statusline badge script for Gemini CLI
+# caveman — statusline badge script for Claude Code
 # Reads the caveman mode flag file and outputs a colored badge.
 #
 # Usage in ~/.claude/settings.json:
 #   "statusLine": { "type": "command", "command": "bash /path/to/caveman-statusline.sh" }
 #
-# Plugin users: Gemini CLI will offer to set this up on first session.
+# Plugin users: Claude Code will offer to set this up on first session.
 # Standalone users: install.sh wires this automatically.
 
 FLAG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.caveman-active"

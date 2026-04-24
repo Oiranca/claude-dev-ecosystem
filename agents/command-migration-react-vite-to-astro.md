@@ -1,25 +1,17 @@
 ---
 name: command-migration-react-vite-to-astro
 description: "Incremental migration workflow from React + Vite to Astro using islands architecture. Validates preconditions, inventories routes, plans architecture, migrates components in batches, and validates."
-model: gemini-3-pro-preview
-tools: ["*"]
+model: sonnet
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Edit
+  - MultiEdit
+  - Write
+  - Bash
+  - Agent
 ---
-
-
-## Gemini CLI Native Note
-
-- This skill runs natively in Gemini CLI.
-- Any references to `local metadata cache` in this document are optional local metadata hints, not required control-plane dependencies.
-
-# Command `migration-react-vite-to-astro`
-
-## Gemini CLI Native Orchestration (v2)
-
-1. Drive orchestration from the current Gemini CLI thread.
-2. Split work into independent lanes and run them with `delegate` when parallelism helps.
-3. Use `interact` to refine or redirect delegated lanes.
-4. Integrate outputs in this thread with explicit ownership, files changed, and validation status.
-5. Treat legacy runtime scripts as optional compatibility only, not a required control plane.
 
 # /migration-react-vite-to-astro
 

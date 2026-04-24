@@ -60,8 +60,6 @@ The product-manager creates the task graph and monitors for blockers. It does no
 agents/          Agent role definitions (markdown)
 skills/          Reusable capability definitions (SKILL.md per skill)
 commands/        Workflow orchestrations (markdown)
-hooks/
-  hooks.json     PreToolUse safety gates
 scripts/
   pre-edit-check.sh   Edit safety gate
   validate-local.sh   Validation runner
@@ -294,7 +292,7 @@ The script:
 
 All agents must respect:
 
-1. **Pre-edit gate**: `hooks/hooks.json` runs `scripts/pre-edit-check.sh` before every Write/Edit/MultiEdit. If it blocks, do not bypass.
+1. **Pre-edit gate**: `settings.json` (PreToolUse hook) runs `scripts/pre-edit-check.sh` before every Write/Edit/MultiEdit. If it blocks, do not bypass.
 2. **Budget tiers**: Low-cost skills run freely. Broader validation max 2/cycle. High-cost max 1/cycle with justification.
 3. **Scope rules**: One milestone per cycle. Never expand scope beyond the active issue.
 4. **Secret safety**: Never expose secrets in outputs. Never commit credentials.
