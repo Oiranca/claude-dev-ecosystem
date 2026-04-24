@@ -46,8 +46,8 @@
     "command": "bash ~/.claude/statusline-command.sh"
   },
   "enabledPlugins": {
-    "claude-mem@thedotmack": true,
-    "caveman@caveman": true
+    "claude-mem@thedotmack": false,
+    "caveman@caveman": false
   },
   "extraKnownMarketplaces": {
     "thedotmack": {

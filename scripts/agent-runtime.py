@@ -156,31 +156,6 @@ def _append_line_locked(path: Path, line: str):
             fcntl.flock(f, fcntl.LOCK_UN)
 
 
-def _read_lines_messages_locked() -> list:
-    """Read all lines from MESSAGES_FILE under companion EX lock."""
-    with open(_io_lock_path(MESSAGES_FILE), "a+") as lf:
-        fcntl.flock(lf, fcntl.LOCK_EX)
-        try:
-            if not MESSAGES_FILE.exists():
-                return []
-            return MESSAGES_FILE.read_text().splitlines(keepends=True)
-        finally:
-            fcntl.flock(lf, fcntl.LOCK_UN)
-
-
-def _write_lines_messages_locked(lines: list):
-    """Rewrite MESSAGES_FILE from a list of lines under companion EX lock."""
-    tmp = MESSAGES_FILE.with_name(MESSAGES_FILE.name + f".{uuid.uuid4().hex[:8]}.tmp")
-    with open(_io_lock_path(MESSAGES_FILE), "a+") as lf:
-        fcntl.flock(lf, fcntl.LOCK_EX)
-        try:
-            with open(tmp, "w") as f:
-                f.writelines(lines)
-            tmp.replace(MESSAGES_FILE)
-        finally:
-            fcntl.flock(lf, fcntl.LOCK_UN)
-
-
 def _append_line_messages_locked(line: str):
     """Append a line to MESSAGES_FILE under companion EX lock."""
     with open(_io_lock_path(MESSAGES_FILE), "a+") as lf:
@@ -188,6 +163,19 @@ def _append_line_messages_locked(line: str):
         try:
             with open(MESSAGES_FILE, "a") as f:
                 f.write(line + "\n")
+        finally:
+            fcntl.flock(lf, fcntl.LOCK_UN)
+
+
+def _update_messages_locked(update_fn):
+    """Run a read/modify/write cycle for MESSAGES_FILE under one EX lock."""
+    with open(_io_lock_path(MESSAGES_FILE), "a+") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            lines = []
+            if MESSAGES_FILE.exists():
+                lines = MESSAGES_FILE.read_text().splitlines(keepends=True)
+            return update_fn(lines)
         finally:
             fcntl.flock(lf, fcntl.LOCK_UN)
 
@@ -332,40 +320,42 @@ def message_inbox(args):
         print("[]")
         return
 
-    # Read all lines under companion lock so no concurrent writer races us.
-    raw_lines = _read_lines_messages_locked()
-    msgs = []
-    updated_lines = []
-    dirty = False
+    def _collect(lines: list):
+        msgs = []
+        updated_lines = []
+        dirty = False
 
-    for line in raw_lines:
-        stripped = line.strip()
-        if not stripped:
-            updated_lines.append(line)
-            continue
-        try:
-            m = json.loads(stripped)
-            if m.get("to") == args.agent:
-                if args.unread and m.get("read"):
-                    updated_lines.append(line)
-                    continue
-                msgs.append(m)
-                if args.unread and not m.get("read"):
-                    m["read"] = True
-                    updated_lines.append(json.dumps(m) + "\n")
-                    dirty = True
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                updated_lines.append(line)
+                continue
+            try:
+                m = json.loads(stripped)
+                if m.get("to") == args.agent:
+                    if args.unread and m.get("read"):
+                        updated_lines.append(line)
+                        continue
+                    msgs.append(m)
+                    if args.unread and not m.get("read"):
+                        m["read"] = True
+                        updated_lines.append(json.dumps(m) + "\n")
+                        dirty = True
+                    else:
+                        updated_lines.append(line)
                 else:
                     updated_lines.append(line)
-            else:
+            except json.JSONDecodeError:
                 updated_lines.append(line)
-        except json.JSONDecodeError:
-            updated_lines.append(line)
-            continue
 
-    if dirty:
-        # Rewrite file with read messages marked — all under companion lock.
-        _write_lines_messages_locked(updated_lines)
+        if dirty:
+            tmp = MESSAGES_FILE.with_name(MESSAGES_FILE.name + f".{uuid.uuid4().hex[:8]}.tmp")
+            with open(tmp, "w") as f:
+                f.writelines(updated_lines)
+            tmp.replace(MESSAGES_FILE)
 
+        return msgs
+    msgs = _update_messages_locked(_collect)
     print(json.dumps(msgs, indent=2))
 
 
@@ -375,30 +365,33 @@ def message_mark_read(args):
         print("No messages file found.")
         return
 
-    # Read under companion lock so the read-then-write is consistent.
-    raw_lines = _read_lines_messages_locked()
-    updated_lines = []
-    count = 0
+    def _mark(lines: list):
+        updated_lines = []
+        count = 0
 
-    for line in raw_lines:
-        stripped = line.strip()
-        if not stripped:
-            updated_lines.append(line)
-            continue
-        try:
-            m = json.loads(stripped)
-            if m.get("to") == args.agent and not m.get("read"):
-                m["read"] = True
-                updated_lines.append(json.dumps(m) + "\n")
-                count += 1
-            else:
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
                 updated_lines.append(line)
-        except json.JSONDecodeError:
-            updated_lines.append(line)
+                continue
+            try:
+                m = json.loads(stripped)
+                if m.get("to") == args.agent and not m.get("read"):
+                    m["read"] = True
+                    updated_lines.append(json.dumps(m) + "\n")
+                    count += 1
+                else:
+                    updated_lines.append(line)
+            except json.JSONDecodeError:
+                updated_lines.append(line)
 
-    # Rewrite atomically under companion lock.
-    _write_lines_messages_locked(updated_lines)
+        tmp = MESSAGES_FILE.with_name(MESSAGES_FILE.name + f".{uuid.uuid4().hex[:8]}.tmp")
+        with open(tmp, "w") as f:
+            f.writelines(updated_lines)
+        tmp.replace(MESSAGES_FILE)
+        return count
 
+    count = _update_messages_locked(_mark)
     print(f"Marked {count} message(s) as read for agent '{args.agent}'.")
 
 

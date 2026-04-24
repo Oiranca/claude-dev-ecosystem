@@ -21,7 +21,7 @@ A parallel multi-agent development environment for Claude Code CLI. Provides a f
 agents/                 # 12 specialized agent role definitions
 skills/                 # 15 reusable skill definitions (SKILL.md per skill)
 commands/               # 7 workflow orchestrations
-settings.json           # Claude Code settings (hooks: PreToolUse, SessionStart, Stop)
+settings.example.json   # Example Claude Code settings (copy to ~/.claude/settings.json)
 scripts/
   pre-edit-check.sh     # Edit safety gate (hook script)
   validate-local.sh     # Validation runner (lint/typecheck/test/build)
@@ -37,7 +37,6 @@ templates/
   local-scaffold/       # Optional docs/ and mcp/ templates for new repos
 .mcp.json               # MCP server config (filesystem + github)
 CLAUDE.md               # Global ecosystem rules loaded by Claude Code
-settings.example.json   # Example Claude Code settings
 ```
 
 ---
