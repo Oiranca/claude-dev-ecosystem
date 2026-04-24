@@ -15,6 +15,7 @@ history.jsonl
 mcp-needs-auth-cache.json
 statusline-command.sh
 .caveman-active
+Agents.md
 
 ##################################################
 # Claude agent runtime state
