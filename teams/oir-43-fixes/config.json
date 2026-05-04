@@ -1,0 +1,19 @@
+{
+  "name": "oir-43-fixes",
+  "description": "Fix QA blockers for OIR-43: add browseForPath tests + error handling",
+  "createdAt": 1777465589574,
+  "leadAgentId": "team-lead@oir-43-fixes",
+  "leadSessionId": "f8a85139-bad1-4036-ab3f-06dbf0fa2967",
+  "members": [
+    {
+      "agentId": "team-lead@oir-43-fixes",
+      "name": "team-lead",
+      "agentType": "team-lead",
+      "model": "claude-sonnet-4-6",
+      "joinedAt": 1777465589574,
+      "tmuxPaneId": "",
+      "cwd": "/Users/samuelromeroarbelo/.claude-mem/observer-sessions",
+      "subscriptions": []
+    }
+  ]
+}
